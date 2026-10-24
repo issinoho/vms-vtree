@@ -66,6 +66,9 @@ $ directory/full [.live]notes.txt;2,bin.dat,data.idx
 $! ---- VTREE under PTYDRIVE
 $ build = here - "]" + ".BUILD]"
 $ vtree :== $'build'vtree.exe
+$! P2 = INSTALLED: run the copy PRODUCT INSTALL put in VTREE: instead of the build
+$ if p2 .eqs. "INSTALLED" then vtree :== $VTREE:VTREE.EXE
+$ write sys$output "==== running ", vtree
 $ drive := $'here'ptydrive.exe
 $! The operation log goes to the work directory, never to the user's SYS$LOGIN.
 $ if f$search("live.log") .nes. "" then delete/nolog live.log;*
