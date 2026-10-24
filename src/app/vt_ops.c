@@ -418,7 +418,7 @@ void vt_op_prompt_done(vt_app *a, int kind, const char *text)
             if (i < fl->n && (fl->f[i].a.status & 1) && (fl->f[i].a.prot & 0x0080)) {
                 char q[VT_SPEC_MAX + 160], ps[48];
                 prot = fl->f[i].a.prot;
-                if (fl->f[i].a.uic != a->sess.uic) {
+                if (fl->f[i].a.uic != a->sess.uic && !a->sess.privileged) {
                     vt_set_msg(a, 1, "%s.DIR has no delete access, which renaming needs, and isn't yours",
                                a->t.n[node].name);
                     return;

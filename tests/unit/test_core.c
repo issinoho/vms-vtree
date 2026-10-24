@@ -249,6 +249,28 @@ static void test_plan(void)
     CHECK(vt_valid_dirname("NEW_DIR$1-A"));
     CHECK(!vt_valid_dirname("") && !vt_valid_dirname("A.B") && !vt_valid_dirname("A B"));
     CHECK(!vt_valid_dirname("[X]") && !vt_valid_dirname("1234567890123456789012345678901234567890"));
+    {
+        unsigned short pr;
+        unsigned int u;
+        vt_time t;
+        char b[64];
+        CHECK(vt_parse_prot("(S:RWED,O:RWED,G:RE,W)", 0, &pr) && pr == 0xFA00);
+        CHECK(vt_parse_prot("G:R,W", 0xFA00, &pr) && !strcmp(vt_fmt_prot(pr, b, sizeof b), "(S:RWED,O:RWED,G:R,W)"));
+        CHECK(vt_parse_prot("world:re", 0xFA00, &pr) && !strcmp(vt_fmt_prot(pr, b, sizeof b), "(S:RWED,O:RWED,G:RE,W:RE)"));
+        CHECK(vt_parse_prot("SYSTEM=RWED, OWNER=DREW", 0xFFFF, &pr) && (pr & 0xFF) == 0);
+        CHECK(vt_parse_prot("o:", 0x0000, &pr) && pr == 0x00F0);
+        CHECK(!vt_parse_prot("X:R", 0, &pr) && !vt_parse_prot("", 0, &pr));
+        CHECK(!vt_parse_prot("S:RWQ", 0, &pr) && !vt_parse_prot("(S:R", 0, &pr));
+        CHECK(!vt_parse_prot("SYSTEMS:R", 0, &pr));
+        CHECK(vt_parse_uic("[200,101]", &u) && u == ((0200u << 16) | 0101u));
+        CHECK(!vt_parse_uic("[IAIN]", &u) && !vt_parse_uic("[8,1]", &u) && !vt_parse_uic("[1,]", &u));
+        CHECK(vt_parse_date("1-JAN-2030", &t) && t == vt_make_time(2030, 1, 1, 0, 0, 0));
+        CHECK(vt_parse_date("29-feb-2028 14:30", &t) && t == vt_make_time(2028, 2, 29, 14, 30, 0));
+        CHECK(vt_parse_date(" 5-Oct-2026 01:02:03 ", &t) && t == vt_make_time(2026, 10, 5, 1, 2, 3));
+        CHECK(vt_parse_date("none", &t) && t == 0);
+        CHECK(!vt_parse_date("29-FEB-2027", &t) && !vt_parse_date("32-JAN-2030", &t));
+        CHECK(!vt_parse_date("1-XYZ-2030", &t) && !vt_parse_date("1-JAN-30", &t) && !vt_parse_date("1-JAN-2030 25:00", &t));
+    }
     CHECK(vt_version_room(0, 0, 1, 0) == VT_ROOM_OK);
     CHECK(vt_version_room(2, 2, 1, 3) == VT_ROOM_OK);
     CHECK(vt_version_room(3, 3, 1, 3) == VT_ROOM_LIMIT);

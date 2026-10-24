@@ -1,0 +1,24 @@
+ VTREE   Attributes and security                              24-OCT-2026 15:02
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ File               DKA0:[USERS.IAIN]SECRET.DAT;1                             │
+│                                                                              │
+│ P  Protection      (S:RWED,O:RWED,G:R,W)                                     │
+│ O  Owner           [200,102]  [200,102]                                      │
+│ E  Expires          1-JAN-2030 00:00                                         │
+│ B  Backup          No (/NOBACKUP)                                            │
+│ Z  Erase on delete No                                                        │
+│                                                                              │
+│ Access Cntrl List  (Up/Down choose an entry, D deletes it, A adds one)       │
+│    (IDENTIFIER=GUEST,ACCESS=READ+WRITE)                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ Not a protection: X:Q  (e.g. S:RWED,O:RWED,G:RE,W)
+ COMMANDS  Up/Down choose an ACE   PF1 GOLD   F10 back

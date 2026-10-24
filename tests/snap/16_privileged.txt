@@ -1,0 +1,24 @@
+ VTREE   DKA0:[USERS.IAIN]                        PRIVILEGED  24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────┬────────────────────┐
+│ DKA0:                                                   │ FILE               │
+│ ├─SYS0                                                  │  *.*;*             │
+│ ├─USERS                                                 │ DISK               │
+│ │ ├─GUEST                                               │  DKA0:             │
+│ │ ├─IAIN                                                │  VMSSYS            │
+│ │ │ ├─COM                                               │  Free    1,234,567 │
+│ │ │ └─VMS_VTREE                                         │ DIRECTORY          │
+│ │ ├─ODD (unchecked)                                     │  Files           0 │
+│ │ └─SYSTEM                                              │  Blocks          0 │
+│ └─VMS$COMMON                                            │ MATCHING           │
+│                                                         │  Files           0 │
+│                                                         │  Blocks          0 │
+├─────────────────────────────────────────────────────────┤ TAGGED             │
+│ Reading...                                              │  Files           0 │
+│                                                         │  Blocks          0 │
+│                                                         │                    │
+│                                                         │ IAIN [200,101]     │
+│                                                         │  PRIVILEGED        │
+│                                                         │  SYS RDA GRP       │
+└─────────────────────────────────────────────────────────┴────────────────────┘
+ PRIVILEGED: SYSPRV READALL GRPPRV are on; file protection will not stop you
+ COMMANDS  PF1 GOLD  Return files  Avail  eXecute  + - *  Help  F10 exit

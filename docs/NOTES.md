@@ -157,3 +157,17 @@ An earlier version of the script reached its destructive steps by arrow keys, dr
 and aimed a prune at the whole work directory; VTREE refused (LOCKED inside), and the
 script's "n" answers were a second guard. The scripts now position with Log and
 exact filespecs before every destructive step (CLAUDE.md).
+
+## N14. Security and attribute changes on the nodes (2026-10-24, x86)
+
+`p4_keys.txt` on `[.LIVE]NOTES.TXT;2`, each change checked afterwards with
+`DIRECTORY/FULL`: protection by `$SET_SECURITY` (2 bytes, N4); owner set to the
+user's own UIC succeeds without privilege; an ACE added with `$PARSE_ACL` +
+`OSS$_ACL_ADD_ENTRY` and deleted again by parsing its `$FORMAT_ACL` text back
+(`OSS$_ACL_DELETE_ENTRY`): the round trip finds the entry; the expiration date by
+ACP `IO$_MODIFY` with `ATR$C_EXPDATE`; `/NOBACKUP` and erase-on-delete by a read,
+change of those two bits only, and `IO$_MODIFY` of `ATR$C_UCHAR` (DIRECTORY/FULL:
+"Backups disabled, Erase before deletion"). DIFFERENCES through `vtp_run` (files as
+job logical names, D6) wrote its listing to SYS$SCRATCH; the viewer showed it and
+deleted it on closing (none left). `VTREE/PRIVILEGES` left SYSPRV, READALL, GRPPRV
+on, showed PRIVILEGED in white on red, and logged the session.

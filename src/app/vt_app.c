@@ -484,6 +484,13 @@ static void prompt_key(vt_app *a, int key)
         break;
     }
     case P_PURGE: { char t[16]; vt_strlcpy(t, a->edit.buf, sizeof t); vt_op_purge_done(a, t); break; }
+    case P_PROT: case P_OWNER: case P_ACE: case P_EXPIRY: {
+        char t[VT_SPEC_MAX];
+        vt_strlcpy(t, a->edit.buf, sizeof t);
+        vt_attr_prompt_done(a, kind, t);
+        break;
+    }
+    case P_SEARCH: { char t[VT_NAME_MAX]; vt_strlcpy(t, a->edit.buf, sizeof t); vt_op_search_done(a, t); break; }
     case P_GRAFT_TO: { char t[VT_SPEC_MAX]; vt_strlcpy(t, a->edit.buf, sizeof t); vt_op_graft_done(a, t); break; }
     default: break;
     }
@@ -570,7 +577,6 @@ static void tree_key(vt_app *a, int key, int gold)
           snprintf(both, sizeof both, "%s%s", dev, dir);
           vt_start_prompt(a, P_LOG, "Log disk or directory: ", both); }
         return;
-    case 'A': case 'a': open_avail(a); return;
     case 'T': case 't': case 'U': case 'u': case VK_SELECT: {
         int on = !(key == 'U' || key == 'u');
         long n;
@@ -595,6 +601,7 @@ static void tree_key(vt_app *a, int key, int gold)
     case 'D': case 'd': case VK_REMOVE: if (!gold) vt_op_rmdir(a); return;
     case 'P': case 'p': if (gold) vt_op_prune(a); else vt_op_purge(a); return;
     case 'G': case 'g': if (gold) vt_op_graft(a); return;
+    case 'A': case 'a': if (gold) { vt_attr_open(a, 0); return; } open_avail(a); return;
     case 'X': case 'x': vt_op_exec(a); return;
     default: return;
     }
@@ -636,11 +643,11 @@ static void file_key(vt_app *a, int key, int gold)
         if (a->fcur + 1 < a->nrefs) a->fcur++;
         break;
     }
-    case 'V': case 'v': if (r) vt_view_open(a, r); break;
     case 'I': case 'i': if (r) { vt_info_build(a, r); a->back_mode = M_FILES; a->mode = M_INFO; } break;
     case '=': a->fmt = !a->fmt; a->ftop = 0; break;
     case 'S': case 's':
         if (gold) vt_start_prompt(a, P_SORT, "Sort by: N name  T type  S size  D date  R reverse", "");
+        else vt_op_search(a);
         break;
     case 'W': case 'w':
         if (gold && r) { int n = r->node; vt_load_files(a, n); }
@@ -651,6 +658,9 @@ static void file_key(vt_app *a, int key, int gold)
     case 'E': case 'e': if (r && !gold) vt_op_edit(a, r); break;
     case 'D': case 'd': case VK_REMOVE: vt_op_delete(a, gold); break;
     case 'P': case 'p': if (!gold) vt_op_purge(a); break;
+    case 'A': case 'a': vt_attr_open(a, gold); break;
+    case 'V': case 'v': if (gold) vt_op_compare(a); else if (r) vt_view_open(a, r); break;
+    case 'O': case 'o': if (gold) vt_op_print(a, 1); else vt_op_print(a, 0); break;
     case 'X': case 'x': vt_op_exec(a); break;
     default: break;
     }
@@ -744,7 +754,7 @@ static void text_key(vt_app *a, int key)
     case VK_DOWN: if (a->itop + page < a->ninfo) a->itop++; break;
     case VK_PREV: a->itop = a->itop > page ? a->itop - page : 0; break;
     case VK_NEXT: if (a->itop + page < a->ninfo) a->itop += page; break;
-    default: a->mode = a->back_mode; vt_text_free(a); break;
+    default: a->mode = a->back_mode; vt_text_free(a); a->text_title[0] = '\0'; a->text_label[0] = '\0'; break;
     }
 }
 
@@ -766,11 +776,13 @@ void vt_app_key(vt_app *a, int key)
     if (a->prompt != P_NONE) { prompt_key(a, key); return; }
     if (key == VK_CTRL_W) { vtp_repaint(); return; }
     if (a->mode == M_VIEW) { vt_view_key(a, key); return; }   /* it has its own GOLD */
+    if (a->mode == M_ATTR) { vt_attr_key(a, key); return; }   /* and so has this */
     if (key == VK_PF1) { a->gold = !a->gold; return; }
     a->gold = 0;
 
     switch (a->mode) {
     case M_INFO: case M_HELP: text_key(a, key); return;
+    case M_ATTR: vt_attr_key(a, key); return;
     case M_AVAIL: avail_key(a, key); return;
     default: break;
     }
@@ -802,6 +814,17 @@ void vt_app_key(vt_app *a, int key)
     if (a->mode == M_TREE) tree_key(a, key, gold);
     else file_key(a, key, gold);
     if (a->msg_progress) { a->msg[0] = '\0'; a->msg_progress = 0; }
+}
+
+void vt_app_session(vt_app *a, int asked)
+{
+    if (a->sess.privileged) {
+        char what[160];
+        snprintf(what, sizeof what, "PRIVILEGED session for %s: %s on", a->sess.user, a->sess.privs_on);
+        vt_log_op(a, "START", what, 0, VTP_OK);
+        vt_set_msg(a, 1, "PRIVILEGED: %s are on; file protection will not stop you", a->sess.privs_on);
+    } else if (asked)
+        vt_set_msg(a, 1, "/PRIVILEGES: you hold none of BYPASS, SYSPRV, READALL, GRPPRV; protection applies");
 }
 
 int vt_app_idle(vt_app *a)

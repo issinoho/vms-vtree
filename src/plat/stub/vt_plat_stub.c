@@ -12,6 +12,7 @@ typedef struct {
     unsigned int ver;
     unsigned short fid[3];
     int is_dir, is_alias, denied, nolink, denied_delete;
+    char acl[8][128]; int nacl;
     vt_attrs a;
     char *content;
     size_t len;
@@ -28,6 +29,7 @@ static struct { char dev[32], dir[VT_SPEC_MAX]; int limit; } limits[8]; static i
 static char fail_name[VT_NAME_MAX];
 static char logbuf[16384];
 static char spawned[VT_SPEC_MAX];
+static char runs[2048];
 static unsigned short next_fid = 100;
 
 void stub_reset(void)
@@ -36,7 +38,7 @@ void stub_reset(void)
     for (i = 0; i < nfiles; i++) free(files[i].content);
     free(files); files = 0; nfiles = capfiles = 0;
     naliases = ndevs = 0; nkeys = kpos = 0; next_fid = 100;
-    nlimits = 0; fail_name[0] = '\0'; logbuf[0] = '\0'; spawned[0] = '\0';
+    nlimits = 0; fail_name[0] = '\0'; logbuf[0] = '\0'; spawned[0] = '\0'; runs[0] = '\0';
 }
 
 void stub_device(const char *dev, const char *label, unsigned int fb, unsigned int mb)
@@ -149,6 +151,10 @@ void stub_file(const char *dev, const char *dir, const char *spec, unsigned int 
     f->a.alloc_blocks = (blocks + 15) / 16 * 16;
     f->a.ffb = 0;
     if (rdt) f->a.rdt = rdt;
+    if (!vt_strcasecmp(name, "SECRET")) {
+        vt_strlcpy(f->acl[0], "(IDENTIFIER=[*,*],ACCESS=READ)", sizeof f->acl[0]);
+        f->nacl = 1;
+    }
     if (content) {
         f->len = strlen(content);
         f->content = (char *) malloc(f->len + 1);
@@ -185,12 +191,15 @@ void stub_keys(const int *k)
 
 /* ---------- the platform ---------- */
 
-unsigned int vtp_start(vtp_session *s)
+unsigned int vtp_start(vtp_session *s, int privileged)
 {
     memset(s, 0, sizeof *s);
     vt_strlcpy(s->user, "IAIN", sizeof s->user);
     s->uic = (0200u << 16) | 0101u;
-    vt_strlcpy(s->privs_off, "SYSPRV READALL GRPPRV", sizeof s->privs_off);
+    if (privileged) {
+        vt_strlcpy(s->privs_on, "SYSPRV READALL GRPPRV", sizeof s->privs_on);
+        s->privileged = 1;
+    } else vt_strlcpy(s->privs_off, "SYSPRV READALL GRPPRV", sizeof s->privs_off);
     vt_strlcpy(s->node, "STUB", sizeof s->node);
     return VTP_OK;
 }
@@ -241,6 +250,7 @@ unsigned int vtp_locate(const char *spec, char *dev, int devsz, char *dir, int d
     char d1[32], d2[VT_SPEC_MAX];
     const char *colon;
     if (!spec || !*spec) { vt_strlcpy(d1, def_dev, sizeof d1); vt_strlcpy(d2, def_dir, sizeof d2); }
+    else if (!vt_strcasecmp(spec, "SYS$SCRATCH:")) { vt_strlcpy(d1, "DKA0:", sizeof d1); vt_strlcpy(d2, "[TMP]", sizeof d2); }
     else {
         colon = strchr(spec, ':');
         if (!colon) return STUB_DNF;
@@ -322,12 +332,15 @@ unsigned int vtp_security_get(const char *path, vtp_security *s)
     sfile *f = by_path(path);
     memset(s, 0, sizeof *s);
     if (!f) return 0x910u;   /* SS$_NOSUCHFILE */
-    vt_strlcpy(s->owner, "[IAIN]", sizeof s->owner);
-    s->acl_status = VTP_OK;
-    if (!vt_strcasecmp(f->name, "SECRET")) {
-        s->acl_count = 1;
-        vt_strlcpy(s->acl[0], "(IDENTIFIER=[*,*],ACCESS=READ)", sizeof s->acl[0]);
+    {
+        char n[60];
+        vtp_uic_name(f->a.uic, n, sizeof n);
+        if (n[0]) snprintf(s->owner, sizeof s->owner, "[%s]", n);
+        else vt_fmt_uic(f->a.uic, s->owner, sizeof s->owner);
     }
+    s->acl_status = VTP_OK;
+    for (s->acl_count = 0; s->acl_count < f->nacl; s->acl_count++)
+        vt_strlcpy(s->acl[s->acl_count], f->acl[s->acl_count], sizeof s->acl[0]);
     return VTP_OK;
 }
 
@@ -562,4 +575,104 @@ void stub_no_delete(const char *dev, const char *dir, const char *name)
         if (!vt_strcasecmp(files[i].dev, dev) && !vt_strcasecmp(files[i].dir, dir) && !vt_strcasecmp(nt, name))
             files[i].denied_delete = 1;
     }
+}
+
+/* ---------- Phase 4 ---------- */
+
+const char *stub_runs(void) { return runs; }
+
+unsigned int vtp_set_owner(const char *path, unsigned int uic)
+{
+    sfile *f = by_path(path);
+    if (!f) return 0x910u;
+    f->a.uic = uic;
+    return VTP_OK;
+}
+
+unsigned int vtp_name_uic(const char *name, unsigned int *uic)
+{
+    const char *n = name[0] == '[' ? name + 1 : name;
+    if (!vt_strncasecmp(n, "IAIN", 4)) { *uic = (0200u << 16) | 0101u; return VTP_OK; }
+    if (!vt_strncasecmp(n, "GUEST", 5)) { *uic = (0200u << 16) | 0102u; return VTP_OK; }
+    return 0x2B4u;                               /* SS$_NOSUCHID */
+}
+
+static int ace_ok(const char *ace)
+{
+    size_t n = strlen(ace);
+    return n > 2 && ace[0] == '(' && ace[n - 1] == ')' && vt_strcasestr(ace, "IDENTIFIER=");
+}
+
+unsigned int vtp_acl_add(const char *path, const char *ace)
+{
+    sfile *f = by_path(path);
+    if (!f) return 0x910u;
+    if (!ace_ok(ace)) return 0x234u;            /* SS$_BADACL */
+    if (f->nacl == 8) return 0x234u;
+    memmove(f->acl[1], f->acl[0], sizeof f->acl[0] * (size_t) f->nacl);   /* at the top */
+    vt_strlcpy(f->acl[0], ace, sizeof f->acl[0]);
+    f->nacl++;
+    return VTP_OK;
+}
+
+unsigned int vtp_acl_delete(const char *path, const char *ace)
+{
+    sfile *f = by_path(path);
+    int i;
+    if (!f) return 0x910u;
+    for (i = 0; i < f->nacl; i++)
+        if (!vt_strcasecmp(f->acl[i], ace)) {
+            memmove(f->acl[i], f->acl[i + 1], sizeof f->acl[0] * (size_t) (f->nacl - i - 1));
+            f->nacl--;
+            return VTP_OK;
+        }
+    return 0x8C4u;                               /* SS$_ACLEMPTY-ish: not found */
+}
+
+unsigned int vtp_acl_delete_all(const char *path)
+{
+    sfile *f = by_path(path);
+    if (!f) return 0x910u;
+    f->nacl = 0;
+    return VTP_OK;
+}
+
+unsigned int vtp_set_expiry(const char *path, vt_time t)
+{
+    sfile *f = by_path(path);
+    if (!f) return 0x910u;
+    f->a.edt = t;
+    return VTP_OK;
+}
+
+unsigned int vtp_set_flags(const char *path, unsigned int set, unsigned int clear)
+{
+    sfile *f = by_path(path);
+    if (!f) return 0x910u;
+    if ((set | clear) & ~(VTP_CH_NOBACKUP | VTP_CH_ERASE)) return 0x14u;
+    f->a.uchar = (f->a.uchar | set) & ~clear;
+    return VTP_OK;
+}
+
+unsigned int vtp_run(const char *command, const char *a, const char *b)
+{
+    char line[3 * VT_SPEC_MAX];
+    snprintf(line, sizeof line, "%s | %s | %s\n", command, a ? a : "", b ? b : "");
+    vt_strlcat(runs, line, sizeof runs);
+    if (strstr(command, "DIFFERENCES")) {             /* make the output file it names */
+        const char *o = strstr(command, "/OUTPUT=");
+        if (o) {
+            char out[VT_SPEC_MAX], dev[32], dir[VT_SPEC_MAX], name[VT_NAME_MAX], type[VT_NAME_MAX];
+            int ver, n = 0;
+            o += 8;
+            while (*o && *o != ' ' && n < (int) sizeof out - 1) out[n++] = *o++;
+            out[n] = '\0';
+            if (split(out, dev, dir, name, type, &ver)) {
+                char nt[2 * VT_NAME_MAX + 8];
+                snprintf(nt, sizeof nt, "%s%s;1", name, type);
+                stub_file(dev, dir, nt, 1, 0, "************\nFile A\n    1   one\n******\nFile B\n    1   two\n");
+            }
+        }
+    }
+    return VTP_OK;
 }

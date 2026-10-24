@@ -8,7 +8,8 @@ GOLD key for the second set of commands.
 **Status: early development.** Browsing (Phase 1), the operations that lose nothing
 (Phase 2: make and rename directories, copy, move, rename, edit, DCL subprocess) and
 deleting (Phase 3: delete, purge, delete a directory, prune a branch, graft) work on
-x86-64 and IA64. Next: protection, owner and ACLs. See [docs/PLAN.md](docs/PLAN.md).
+x86-64 and IA64, and so do protection, owner, ACLs, expiration dates and file flags
+(Phase 4), search, compare and print. Next: a PCSI kit. See [docs/PLAN.md](docs/PLAN.md).
 
 ## Trying it
 
@@ -17,6 +18,7 @@ Build on the node with `@build_vms`, then
     $ VTREE :== $dev:[dir.BUILD]VTREE.EXE
     $ VTREE                      ! starts in your default directory
     $ VTREE SYS$SYSROOT:[SYSHLP] ! or anywhere else
+    $ VTREE/PRIVILEGES           ! keep SYSPRV etc. on (system managers; shown in red)
 
 It needs a VT100-compatible terminal of at least 24 x 80 (132 columns are used if
 the terminal has them). The screen uses XTree Gold's colours; on a terminal without

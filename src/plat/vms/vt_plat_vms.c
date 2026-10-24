@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <string.h>
 #include <rms.h>
 #include <starlet.h>
@@ -78,7 +79,7 @@ static struct { unsigned int link; void (*handler)(void); unsigned int argc; uns
 
 static void on_exit(void) { vtp_stop(); }
 
-unsigned int vtp_start(vtp_session *s)
+unsigned int vtp_start(vtp_session *s, int privileged)
 {
     union prvdef off, prev;
     unsigned int st, uic = 0;
@@ -91,17 +92,32 @@ unsigned int vtp_start(vtp_session *s)
     const char *mode;
 
     memset(s, 0, sizeof *s);
-    /* D5: protection must apply. Temporary: image rundown restores them (N7). */
     memset(&off, 0, sizeof off);
-    off.prv$v_bypass = off.prv$v_sysprv = off.prv$v_readall = off.prv$v_grpprv = 1;
     memset(&prev, 0, sizeof prev);
-    st = sys$setprv(0, (struct _generic_64 *) &off, 0, (struct _generic_64 *) &prev);
-    if (!(st & 1)) return st;
-    if (prev.prv$v_bypass) vt_strlcat(s->privs_off, "BYPASS ", sizeof s->privs_off);
-    if (prev.prv$v_sysprv) vt_strlcat(s->privs_off, "SYSPRV ", sizeof s->privs_off);
-    if (prev.prv$v_readall) vt_strlcat(s->privs_off, "READALL ", sizeof s->privs_off);
-    if (prev.prv$v_grpprv) vt_strlcat(s->privs_off, "GRPPRV ", sizeof s->privs_off);
-    rtrim(s->privs_off);
+    if (privileged) {
+        /* D5 amended: left as they are; only find out which are on. */
+        unsigned short pl = 0;
+        ile(&it[0], JPI$_CURPRIV, &prev, 8, &pl);
+        memset(&it[1], 0, sizeof it[1]);
+        st = sys$getjpiw(0, 0, 0, it, 0, 0, 0);
+        if (!(st & 1)) return st;
+        if (prev.prv$v_bypass) vt_strlcat(s->privs_on, "BYPASS ", sizeof s->privs_on);
+        if (prev.prv$v_sysprv) vt_strlcat(s->privs_on, "SYSPRV ", sizeof s->privs_on);
+        if (prev.prv$v_readall) vt_strlcat(s->privs_on, "READALL ", sizeof s->privs_on);
+        if (prev.prv$v_grpprv) vt_strlcat(s->privs_on, "GRPPRV ", sizeof s->privs_on);
+        rtrim(s->privs_on);
+        s->privileged = s->privs_on[0] != '\0';
+    } else {
+        /* D5: protection must apply. Temporary: image rundown restores them (N7). */
+        off.prv$v_bypass = off.prv$v_sysprv = off.prv$v_readall = off.prv$v_grpprv = 1;
+        st = sys$setprv(0, (struct _generic_64 *) &off, 0, (struct _generic_64 *) &prev);
+        if (!(st & 1)) return st;
+        if (prev.prv$v_bypass) vt_strlcat(s->privs_off, "BYPASS ", sizeof s->privs_off);
+        if (prev.prv$v_sysprv) vt_strlcat(s->privs_off, "SYSPRV ", sizeof s->privs_off);
+        if (prev.prv$v_readall) vt_strlcat(s->privs_off, "READALL ", sizeof s->privs_off);
+        if (prev.prv$v_grpprv) vt_strlcat(s->privs_off, "GRPPRV ", sizeof s->privs_off);
+        rtrim(s->privs_off);
+    }
 
     ile(&it[0], JPI$_USERNAME, user, 12, &ul);
     ile(&it[1], JPI$_UIC, &uic, 4, &ql);
@@ -952,4 +968,152 @@ unsigned int vtp_compare(const char *pa, const char *pb)
     sys$close(&fa, 0, 0);
     sys$close(&fb, 0, 0);
     return result;
+}
+
+/* ---------- Phase 4 ---------- */
+
+unsigned int vtp_set_owner(const char *path, unsigned int uic)
+{
+    struct dsc$descriptor_s cls, obj;
+    unsigned int u = uic;
+    ile3 it[2];
+    dsc(&cls, "FILE", 4);
+    dsc(&obj, path, (unsigned short) strlen(path));
+    ile(&it[0], OSS$_OWNER, &u, 4, 0);
+    memset(&it[1], 0, sizeof it[1]);
+    return sys$set_security(&cls, &obj, 0, 0, it, 0, 0);
+}
+
+unsigned int vtp_name_uic(const char *name, unsigned int *uic)
+{
+    struct dsc$descriptor_s d;
+    unsigned int id = 0, attr = 0, st;
+    char n[64];
+    size_t i;
+    for (i = 0; name[i] && i < sizeof n - 1; i++) n[i] = (char) toupper((unsigned char) name[i]);
+    n[i] = '\0';
+    if (n[0] == '[') { memmove(n, n + 1, strlen(n)); if (n[0] && n[strlen(n) - 1] == ']') n[strlen(n) - 1] = '\0'; }
+    dsc(&d, n, (unsigned short) strlen(n));
+    st = sys$asctoid(&d, &id, &attr);
+    if (!(st & 1)) return st;
+    if (id & 0x80000000u) return SS$_IVIDENT;           /* not a UIC identifier */
+    *uic = id;
+    return SS$_NORMAL;
+}
+
+static unsigned int acl_op(const char *path, int code, const char *ace)
+{
+    struct dsc$descriptor_s cls, obj, at, ad;
+    char bin[256];
+    unsigned short al = 0;
+    unsigned int st;
+    ile3 it[2];
+    dsc(&cls, "FILE", 4);
+    dsc(&obj, path, (unsigned short) strlen(path));
+    if (ace) {
+        dsc(&at, ace, (unsigned short) strlen(ace));
+        dsc(&ad, bin, sizeof bin);
+        st = sys$parse_acl(&at, &ad, 0, 0, 0);
+        if (!(st & 1)) return st;
+        al = (unsigned char) bin[0];
+    }
+    ile(&it[0], (unsigned short) code, bin, al, 0);
+    memset(&it[1], 0, sizeof it[1]);
+    return sys$set_security(&cls, &obj, 0, 0, it, 0, 0);
+}
+
+unsigned int vtp_acl_add(const char *path, const char *ace) { return acl_op(path, OSS$_ACL_ADD_ENTRY, ace); }
+unsigned int vtp_acl_delete(const char *path, const char *ace) { return acl_op(path, OSS$_ACL_DELETE_ENTRY, ace); }
+unsigned int vtp_acl_delete_all(const char *path) { return acl_op(path, OSS$_ACL_DELETE_ALL, 0); }
+
+/* The file's device channel and file ID, for an ACP call on exactly this file. */
+static unsigned int file_id(const char *path, unsigned short *chan, unsigned short fid[3])
+{
+    static char esa[NAML$C_MAXRSS + 1], rsa[NAML$C_MAXRSS + 1];
+    struct FAB fab;
+    struct NAML naml;
+    struct dsc$descriptor_s dv;
+    unsigned int st;
+    naml_setup(&fab, &naml, path, esa, rsa);
+    st = sys$parse(&fab, 0, 0);
+    if (!(st & 1)) return st;
+    st = sys$search(&fab, 0, 0);
+    if (!(st & 1)) return st;
+    memcpy(fid, naml.naml$w_fid, 6);
+    dsc(&dv, (char *) &naml.naml$t_dvi[1], naml.naml$t_dvi[0]);
+    st = sys$assign(&dv, chan, 0, 0);
+    naml.naml$b_nop |= NAML$M_SYNCHK;
+    sys$parse(&fab, 0, 0);
+    return st;
+}
+
+static unsigned int acp_modify(const char *path, atr_item *atr)
+{
+    unsigned short chan = 0, fid[3], iosb[4];
+    struct fibdef fib;
+    struct dsc$descriptor_s fibd;
+    unsigned int st = file_id(path, &chan, fid);
+    if (!(st & 1)) return st;
+    memset(&fib, 0, sizeof fib);
+    memcpy(&fib.fib$w_fid, fid, 6);
+    dsc(&fibd, (char *) &fib, sizeof fib);
+    st = sys$qiow(0, chan, IO$_MODIFY, (void *) iosb, 0, 0, &fibd, 0, 0, 0, atr, 0);
+    if (st & 1) st = iosb[0];
+    sys$dassgn(chan);
+    return st;
+}
+
+unsigned int vtp_set_expiry(const char *path, vt_time t)
+{
+    atr_item atr[2];
+    atr[0].size = 8; atr[0].type = ATR$C_EXPDATE; atr[0].addr = &t;
+    atr[1].size = 0; atr[1].type = 0; atr[1].addr = 0;
+    return acp_modify(path, atr);
+}
+
+unsigned int vtp_set_flags(const char *path, unsigned int set, unsigned int clear)
+{
+    const unsigned int allowed = VTP_CH_NOBACKUP | VTP_CH_ERASE;
+    unsigned short chan = 0, fid[3], back[3];
+    unsigned int uchar = 0, st;
+    vt_attrs a;
+    atr_item atr[2];
+    if ((set | clear) & ~allowed) return SS$_BADPARAM;
+    st = file_id(path, &chan, fid);
+    if (!(st & 1)) return st;
+    st = read_attrs(chan, fid, 0, &a, &uchar, back);      /* as it is now */
+    sys$dassgn(chan);
+    if (!(st & 1)) return st;
+    uchar = (uchar | set) & ~clear;
+    atr[0].size = 4; atr[0].type = ATR$C_UCHAR; atr[0].addr = &uchar;
+    atr[1].size = 0; atr[1].type = 0; atr[1].addr = 0;
+    return acp_modify(path, atr);
+}
+
+unsigned int vtp_run(const char *command, const char *file_a, const char *file_b)
+{
+    char la[40], lb[40], cmd[600];
+    struct dsc$descriptor_s dl, dv, dt, dc, dnl;
+    unsigned int st, status = 0;
+    const char *p;
+    int o = 0;
+    sprintf(la, "VTREE$A_%X", (unsigned int) getpid());
+    sprintf(lb, "VTREE$B_%X", (unsigned int) getpid());
+    dsc(&dt, "LNM$JOB", 7);
+    if (file_a) { dsc(&dl, la, (unsigned short) strlen(la)); dsc(&dv, file_a, (unsigned short) strlen(file_a)); lib$set_logical(&dl, &dv, &dt, 0, 0); }
+    if (file_b) { dsc(&dl, lb, (unsigned short) strlen(lb)); dsc(&dv, file_b, (unsigned short) strlen(file_b)); lib$set_logical(&dl, &dv, &dt, 0, 0); }
+    for (p = command; *p && o < (int) sizeof cmd - 40; p++) {
+        if (p[0] == '$' && (p[1] == 'A' || p[1] == 'B')) {
+            const char *l = p[1] == 'A' ? la : lb;
+            memcpy(cmd + o, l, strlen(l)); o += (int) strlen(l); p++;
+        } else cmd[o++] = *p;
+    }
+    cmd[o] = '\0';
+    dsc(&dc, cmd, (unsigned short) o);
+    dsc(&dnl, "NL:", 3);
+    st = lib$spawn(&dc, &dnl, &dnl, 0, 0, 0, &status, 0, 0, 0, 0, 0, 0);
+    if (file_a) { dsc(&dl, la, (unsigned short) strlen(la)); lib$delete_logical(&dl, &dt); }
+    if (file_b) { dsc(&dl, lb, (unsigned short) strlen(lb)); lib$delete_logical(&dl, &dt); }
+    if (!(st & 1)) return st;
+    return status;
 }

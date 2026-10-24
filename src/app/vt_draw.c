@@ -39,6 +39,8 @@ void vt_draw_title(vt_app *a, const char *what)
     vt_put(s, 0, 1, "VTREE", VT_A_REV | VT_A_BOLD, -1);
     vt_put(s, 0, s->cols - cl - 1, clock, VT_A_REV, -1);
     vt_role(s, VT_R_AUTO);
+    if (a->sess.privileged)                 /* all session long (D5): white on red */
+        vt_put(s, 0, s->cols - cl - 14, " PRIVILEGED ", VT_A_REV | VT_A_BOLD, -1);
 }
 
 void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *l2)
@@ -206,7 +208,7 @@ static void panel(vt_app *a, int r1, int r2, int c1)
 {
     vt_screen *s = &a->scr;
     int r = r1, node = a->list_node >= 0 ? a->list_node : vt_cur_node(a), root, i;
-    char b[64], line[64], dev[VT_SPEC_MAX], dir[VT_SPEC_MAX];
+    char b[64], line[128], dev[VT_SPEC_MAX], dir[VT_SPEC_MAX];
     vtp_device d;
     long tf = 0; unsigned long tb = 0;
     static char last_dev[64]; static vtp_device last_d; static vt_time last_t;
@@ -252,7 +254,18 @@ static void panel(vt_app *a, int r1, int r2, int c1)
     snprintf(line, sizeof line, " Blocks %10s", vt_commas(tb, b, sizeof b)); PL(line, 0);
     r++;
     snprintf(line, sizeof line, "%s %s", a->sess.user, vt_fmt_uic(a->sess.uic, b, sizeof b)); PL(line, 0);
-    PL(a->sess.privs_off[0] ? " Privs off" : " No privs to drop", 0);
+    if (a->sess.privileged) {
+        PL(" PRIVILEGED", VT_A_REV | VT_A_BOLD);
+        {   /* the panel is narrow: SYSPRV READALL GRPPRV -> SYS RDA GRP */
+            static const char *const full[] = { "BYPASS", "SYSPRV", "READALL", "GRPPRV" };
+            static const char *const abbr[] = { "BYP", "SYS", "RDA", "GRP" };
+            int k;
+            line[0] = '\0';
+            for (k = 0; k < 4; k++)
+                if (strstr(a->sess.privs_on, full[k])) { vt_strlcat(line, " ", sizeof line); vt_strlcat(line, abbr[k], sizeof line); }
+            PL(line, 0);
+        }
+    } else PL(a->sess.privs_off[0] ? " Privs off" : " No privs to drop", 0);
 #undef PL
 }
 
@@ -298,7 +311,7 @@ static void draw_main(vt_app *a)
         } else {
         vt_draw_title(a, title);
         if (a->gold)
-            vt_draw_bottom(a, "GOLD", "&Graft &Log whole disk &Prune &Sort &Tag/&Untag branch &W reread",
+            vt_draw_bottom(a, "GOLD", "&Attrs &Graft &Log whole disk &Prune &Sort &Tag/&Untag branch &W reread",
                         "PF1 cancel GOLD   Up/Down top/end");
         else
             vt_draw_bottom(a, "DIR", "&Branch &Delete &Filespec &Info &Log &Makedir &Purge &Rename &Showall &Tag &Untag",
@@ -309,12 +322,12 @@ static void draw_main(vt_app *a)
         if (a->mode == M_FILES && a->nrefs) vt_ref_path(a, &a->refs[a->fcur], title, sizeof title);
         vt_draw_title(a, title);
         if (a->gold)
-            vt_draw_bottom(a, "GOLD", "&Copy &Delete &Move &Rename tagged  &Sort  &Tag/&Untag all  &W reread",
-                           "PF1 cancel GOLD   Up/Down first/last");
+            vt_draw_bottom(a, "GOLD", "&Attrs &Copy &Delete &Move &Rename tagged &Output &Sort &Tag/&Untag &View-diff",
+                           "PF1 cancel GOLD   Up/Down first/last   W reread");
         else
             vt_draw_bottom(a, a->kind == L_SHOWALL ? "SHOWALL" : a->kind == L_BRANCH ? "BRANCH" : "FILE",
-                        "&Copy &Delete &Edit &Filespec &Info &Move &Purge &Rename &Tag &Untag &View e&Xecute",
-                        "PF1 GOLD   Return tree   Select tag   Help   F10 tree");
+                        "&Attrs &Copy &Delete &Filespec &Info &Move &Purge &Rename &Search &Tag &Untag &View",
+                        "PF1 GOLD  Return tree  Select tag  &Edit  e&Xecute  Help  F10 tree");
     }
 }
 
@@ -354,9 +367,10 @@ void vt_app_draw(vt_app *a)
     switch (a->mode) {
     case M_VIEW: vt_view_fill(a, a->scr.rows - 4, a->scr.cols - 2); break;
     case M_INFO: draw_text(a, a->text_title[0] ? a->text_title : "File information",
-                           a->text_title[0] ? "CONFIRM" : "INFO"); break;
+                           a->text_label[0] ? a->text_label : "INFO"); break;
     case M_HELP: draw_text(a, "Help", "HELP"); break;
     case M_AVAIL: draw_avail(a); break;
+    case M_ATTR: vt_attr_draw(a); break;
     default: draw_main(a); break;
     }
 }

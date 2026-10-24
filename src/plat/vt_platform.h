@@ -18,12 +18,16 @@ typedef struct {
     char user[40];
     unsigned int uic;
     char privs_off[80];       /* the privileges VTREE turned off, "" if none were on */
+    int privileged;           /* /PRIVILEGES: left on (D5); 0 if none of them is held */
+    char privs_on[80];        /* in privileged mode: which of the four are on */
     char node[16];
 } vtp_session;
 
 /* Start: switch off protection-overriding privileges (D5), take the terminal.
-   Returns a status; on failure nothing has been changed. */
-unsigned int vtp_start(vtp_session *s);
+   With privileged (the /PRIVILEGES qualifier) they stay as they are, and
+   s->privileged says whether any of them is on. Returns a status; on failure
+   nothing has been changed. */
+unsigned int vtp_start(vtp_session *s, int privileged);
 void vtp_stop(void);                        /* give the terminal back */
 
 /* Screen */
@@ -78,7 +82,7 @@ unsigned int vtp_list(const char *dev, const char *dir, const char *pattern, int
 
 /* Details for the Info screen: one file's security. */
 typedef struct {
-    char owner[64];           /* "[IAIN]" or "[200,101]" */
+    char owner[80];           /* "[ISSINOHO,IAIN]" or "[200,101]" */
     int acl_count;
     char acl[32][128];        /* formatted ACEs */
     unsigned int acl_status;  /* 1, or why the ACL couldn't be read */
@@ -127,6 +131,26 @@ unsigned int vtp_delete(const char *path);
 /* Compare two files block by block: VTP_OK if identical, VTP_DIFFERENT if not. */
 #define VTP_DIFFERENT 0x1006u
 unsigned int vtp_compare(const char *a, const char *b);
+
+/* ---------- Phase 4: security and attributes ---------- */
+
+unsigned int vtp_set_owner(const char *path, unsigned int uic);
+/* A user name ("IAIN") to its UIC; fails for a name that is not a UIC identifier. */
+unsigned int vtp_name_uic(const char *name, unsigned int *uic);
+/* ACEs as $FORMAT_ACL writes them, e.g. "(IDENTIFIER=[*,*],ACCESS=READ)". */
+unsigned int vtp_acl_add(const char *path, const char *ace);
+unsigned int vtp_acl_delete(const char *path, const char *ace);
+unsigned int vtp_acl_delete_all(const char *path);
+/* 0 = no expiration date. */
+unsigned int vtp_set_expiry(const char *path, vt_time t);
+/* File characteristics: only these two may be set or cleared; every other bit is
+   written back as it was read. */
+#define VTP_CH_NOBACKUP (1u << 1)
+#define VTP_CH_ERASE    (1u << 17)
+unsigned int vtp_set_flags(const char *path, unsigned int set, unsigned int clear);
+/* Run a DCL command with no terminal (input and output NL:). In the command, $A and
+   $B stand for file_a and file_b, which reach it as job logical names (D6). */
+unsigned int vtp_run(const char *command, const char *file_a, const char *file_b);
 
 /* Throw away keys typed ahead, so that they can never answer a question. */
 void vtp_flush_keys(void);

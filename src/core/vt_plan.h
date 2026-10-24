@@ -3,6 +3,7 @@
 #define VT_PLAN_H
 
 #include <stddef.h>
+#include "vt_types.h"
 
 /* Apply an output pattern as COPY does: "*.BAK", "NEW.*", "X" (no type: keep the
    type). Each field is "*" or a plain name; no other wildcards, no version, device
@@ -19,6 +20,17 @@ int vt_valid_dirname(const char *s);
    free. Returns how many were marked. keep >= 1. */
 typedef struct { const char *name, *type; unsigned int ver; } vt_nver;
 int vt_purge_select(const vt_nver *f, int n, int keep, int *out);
+
+/* Protection in DCL syntax: "(S:RWED,O:RWED,G:RE,W)", "G:R,W", "SYSTEM:RWED,OWNER:RW".
+   Classes not named keep their old value; "W" or "W:" alone means no access.
+   Returns 1 and the new word in *out, or 0 if the text is not valid. */
+int vt_parse_prot(const char *text, unsigned short old, unsigned short *out);
+/* "[200,101]" (octal) into a UIC. 1 if it was a numeric UIC, 0 otherwise (a name:
+   the platform looks it up). */
+int vt_parse_uic(const char *text, unsigned int *uic);
+/* "1-JAN-2030", "1-JAN-2030 14:30", "1-jan-2030 14:30:15", or "NONE" (0).
+   Returns 1 and the time, or 0. */
+int vt_parse_date(const char *text, vt_time *out);
 
 enum { VT_ROOM_OK, VT_ROOM_LIMIT, VT_ROOM_32767 };
 /* Can incoming new versions be added to count existing ones (highest h) without

@@ -75,6 +75,10 @@ $ drive 'keys'
 $ write sys$output "==== privileges after: SYSPRV ", f$privilege("SYSPRV"), " READALL ", f$privilege("READALL")
 $ write sys$output "==== operation log"
 $ if f$search("live.log") .nes. "" then type live.log
+$ write sys$output "==== notes.txt;2 after"
+$ if f$search("[.live]notes.txt;2") .nes. "" then directory/full [.live]notes.txt;2
+$ write sys$output "==== scratch files left by VTREE"
+$ directory sys$scratch:vtree_diff_*.*;*
 $ write sys$output "==== tree after"
 $ directory/size/date/prot [.live...]
 $ exit 1

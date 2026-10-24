@@ -45,9 +45,12 @@ level, reversible) and restores the previous set at exit, including after Ctrl/Y
 errors: a temporary `$SETPRV` is undone by image rundown whatever the exit (N7). The
 status panel shows "Privs off".
 
-Open for Phase 3/4: how a system manager deliberately works with privileges on. Proposed:
-a `/PRIVILEGES` qualifier only (no in-program toggle), and a reverse-video
-"PRIVILEGED" in the title line for the whole session.
+Privileged mode (2026-10-24, user's choice): `VTREE/PRIVILEGES` leaves the four
+privileges as they are. Only at start-up, never toggled in a session; "PRIVILEGED" in
+the title line (white on red) and the panel all session; the session is logged with
+the privileges on; the delete page says protection won't stop it. In this mode the
+owned-and-agreed rule for adding D to a directory (N11) drops "owned": the question
+is still asked. If none of the four is held, VTREE says so and runs as usual.
 
 ## D6. Changes through system services, never through built DCL lines (2026-10-24)
 

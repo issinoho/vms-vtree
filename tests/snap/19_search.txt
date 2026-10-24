@@ -1,0 +1,24 @@
+ VTREE   Search: "DEFINE" - 1 line in 1 file                  24-OCT-2026 15:02
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DKA0:[USERS.IAIN]LOGIN.COM;12                                                │
+│        2  $ define/nolog vtree$test yes                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ SEARCH  Up/Down Prev/Next scroll
+ COMMANDS  Any other key returns

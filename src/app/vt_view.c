@@ -15,6 +15,7 @@ void vt_view_close(vt_app *a)
     vt_viewer *w = &a->view;
     int i;
     if (w->v) vtp_view_close(w->v);
+    if (w->temp && w->path[0]) vtp_delete(w->path);   /* VTREE's own scratch file */
     for (i = 0; i < w->nlines; i++) free(w->lines[i]);
     free(w->lines);
     free(w->marks);
@@ -76,6 +77,27 @@ static void go_line(vt_app *a, long n)
     vtp_view_seek(w->v, &w->marks[k]);
     cur = k * VT_VIEW_STEP;
     while (cur < n && next_rec(a, &len)) ;
+}
+
+void vt_view_open_path(vt_app *a, const char *path, int temp)
+{
+    vt_viewer *w = &a->view;
+    unsigned int st;
+    int len;
+    vt_view_close(a);
+    vt_strlcpy(w->path, path, sizeof w->path);
+    w->temp = temp;
+    st = vtp_view_open(w->path, 0, &w->v);
+    if (!(st & 1)) {
+        vt_status_msg(a, w->path, st);
+        if (temp) vtp_delete(w->path);
+        w->v = 0; w->temp = 0;
+        return;
+    }
+    cur = 0;
+    if (next_rec(a, &len)) { vtp_view_seek(w->v, &w->marks[0]); cur = 0; }
+    a->back_mode = a->mode;
+    a->mode = M_VIEW;
 }
 
 void vt_view_open(vt_app *a, const vt_ref *r)
@@ -404,6 +426,7 @@ static const char *const help_tree[] = {
     "  GOLD P                Prune: delete this whole branch (asks, then wants its",
     "                        name typed back; refused if an alias is inside)",
     "  GOLD G                Graft: move this branch to another directory, same disk",
+    "  GOLD A                Attributes of this directory file (protection, ACL...)",
     "  X                     eXecute: a DCL subprocess (LOGOUT comes back)",
     "  GOLD W                read this directory again",
     "  Ctrl/W                redraw the screen",
@@ -417,7 +440,8 @@ static const char *const help_tree[] = {
     "A ? after a name: the directory could not be read (I tells you why).",
     "",
     "VTREE switches off BYPASS, SYSPRV, READALL and GRPPRV while it runs, so",
-    "it can only see and do what file protection allows you.",
+    "it can only see and do what file protection allows you. VTREE/PRIVILEGES",
+    "leaves them on, for a system manager; the title then says PRIVILEGED.",
     0 };
 
 static const char *const help_files[] = {
@@ -430,6 +454,10 @@ static const char *const help_files[] = {
     "  I                     Info: sizes, dates, owner, protection, ACL",
     "  F  Find               filespec;   ;  versions;   =  one line per file",
     "  GOLD S                sort by name, type, size or date",
+    "  A                     Attributes: protection, owner, ACL, expiration, flags",
+    "  S                     Search the tagged files (or this one) for text",
+    "  GOLD V                compare the two tagged files (DIFFERENCES)",
+    "  O  GOLD O             print this file / the tagged files on SYS$PRINT",
     "  C  M  R               Copy, Move, Rename this file (a move to another disk",
     "                        copies, compares, then deletes the original)",
     "  D  Remove             Delete this version",

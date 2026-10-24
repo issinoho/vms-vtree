@@ -21,4 +21,4 @@
 │                                                         │                    │
 └─────────────────────────────────────────────────────────┴────────────────────┘
  Copy: 1 done
- COMMANDS  PF1 GOLD   Return tree   Select tag   Help   F10 tree
+ COMMANDS  PF1 GOLD  Return tree  Select tag  Edit  eXecute  Help  F10 tree

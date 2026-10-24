@@ -117,9 +117,12 @@ static int confirm_page(vt_app *a, const char *title, const vt_victims *v, int d
     }
     a->back_mode = mode;
     a->mode = M_INFO;
-    vt_strlcpy(a->text_title, "Check what will be deleted", sizeof a->text_title);
+    vt_strlcpy(a->text_label, "CONFIRM", sizeof a->text_label);
+    vt_strlcpy(a->text_title, a->sess.privileged ? "Check what will be deleted - PRIVILEGED: protection won't stop it"
+                                                 : "Check what will be deleted", sizeof a->text_title);
     ans = vt_ask(a, question, "YN", 'N');
     a->text_title[0] = '\0';
+    a->text_label[0] = '\0';
     vt_text_free(a);
     a->mode = mode;
     a->back_mode = back;
@@ -298,7 +301,7 @@ static int allow_delete(vt_app *a, const vt_file *e, const char *path, unsigned 
     unsigned int st;
     *changed = 0;
     if (!(e->a.status & 1) || !(e->a.prot & 0x0080)) return 1;
-    if (e->a.uic != a->sess.uic) return 0;
+    if (e->a.uic != a->sess.uic && !a->sess.privileged) return 0;
     *restore = e->a.prot;
     st = vtp_set_prot(path, (unsigned short) (e->a.prot & ~0x0080));
     vt_log_op(a, "PROT", path, 0, st);
@@ -339,7 +342,7 @@ void vt_op_rmdir(vt_app *a)
     if ((e->flags & VT_F_ALIAS)) { vt_set_msg(a, 1, "%s is an alias: refused", a->t.n[node].name); return; }
     vt_tree_spec(&a->t, parent, dev, sizeof dev, pdir, sizeof pdir);
     snprintf(path, sizeof path, "%s%s%s.DIR;1", dev, pdir, a->t.n[node].name);
-    if ((e->a.prot & 0x0080) && e->a.uic != a->sess.uic) {
+    if ((e->a.prot & 0x0080) && e->a.uic != a->sess.uic && !a->sess.privileged) {
         vt_set_msg(a, 1, "%s.DIR has no delete access and isn't yours", a->t.n[node].name);
         return;
     }
@@ -443,7 +446,7 @@ void vt_op_prune(vt_app *a)
                     break;
             if (k == pf->n) { vt_set_msg(a, 1, "Prune refused: %s.DIR not found in its parent", a->t.n[n].name); goto out; }
             if (pf->f[k].a.prot & 0x0080) {
-                if (pf->f[k].a.uic != a->sess.uic) {
+                if (pf->f[k].a.uic != a->sess.uic && !a->sess.privileged) {
                     vt_set_msg(a, 1, "Prune refused, nothing deleted: %s.DIR has no delete access and isn't yours",
                                a->t.n[n].name);
                     goto out;
@@ -572,7 +575,7 @@ void vt_op_graft_done(vt_app *a, const char *text)
     }
     e = vt_dir_entry(a, node);
     if (!e) { vt_set_msg(a, 1, "%s.DIR;1 is not in its parent's listing", a->t.n[node].name); return; }
-    if ((e->a.prot & 0x0080) && e->a.uic != a->sess.uic) {
+    if ((e->a.prot & 0x0080) && e->a.uic != a->sess.uic && !a->sess.privileged) {
         vt_set_msg(a, 1, "%s.DIR has no delete access, which moving it needs, and isn't yours", a->t.n[node].name);
         return;
     }

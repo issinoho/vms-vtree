@@ -10,12 +10,13 @@
 #include "vt_screen.h"
 #include "vt_platform.h"
 
-enum { M_TREE, M_FILES, M_VIEW, M_INFO, M_HELP, M_AVAIL };
+enum { M_TREE, M_FILES, M_VIEW, M_INFO, M_HELP, M_AVAIL, M_ATTR };
 enum { L_DIR, L_BRANCH, L_SHOWALL };
 enum { S_NAME, S_TYPE, S_SIZE, S_DATE };
 enum { P_NONE, P_FILESPEC, P_LOG, P_FIND, P_SORT, P_QUIT, P_ASK,
        P_COPY_AS, P_COPY_TO, P_MOVE_TO, P_RENAME, P_MKDIR, P_RENDIR,
-       P_ASKTEXT, P_PURGE, P_GRAFT_TO };
+       P_ASKTEXT, P_PURGE, P_GRAFT_TO,
+       P_PROT, P_OWNER, P_ACE, P_EXPIRY, P_SEARCH };
 enum { OP_COPY = 1, OP_MOVE, OP_RENAME };
 
 typedef struct { int node, idx; } vt_ref;    /* a file: t.n[node].files.f[idx] */
@@ -47,6 +48,7 @@ typedef struct {
     int at_end;               /* known is the whole file */
     unsigned long long size;  /* bytes, for hex */
     char find[VT_NAME_MAX];
+    int temp;                 /* VTREE's own scratch file: deleted when the viewer closes */
     char **lines;             /* the lines on screen, filled by vt_view_fill */
     int nlines;
 } vt_viewer;
@@ -86,7 +88,8 @@ typedef struct {
 
     vt_viewer view;
     char **info; int ninfo; int itop;              /* Info and Help text */
-    char text_title[64];                           /* the title of an M_INFO page */
+    char text_title[128];                         /* the title of an M_INFO page */
+    char text_label[16];                          /* its menu label ("INFO" if empty) */
     vtp_device devs[64]; int ndevs, dcur;
 
     int progress_count;
@@ -97,6 +100,13 @@ typedef struct {
     char op_pattern[VT_SPEC_MAX];
     int picking;                       /* choosing a destination in the tree */
     struct { int mode, kind, list_node, fcur, ftop, tcur, ttop; } pick_save;
+
+    /* the attributes screen (Phase 4) */
+    int attr_back, attr_sel, attr_nacl, attr_acl0;
+    char attr_acl[32][128];
+    unsigned short attr_cur_prot;
+    unsigned int attr_cur_uchar;
+    vt_time attr_cur_edt;
 } vt_app;
 
 /* Set up and log the start directory (spec, or the default directory if 0). */
@@ -107,6 +117,8 @@ void vt_app_key(vt_app *a, int key);
 int  vt_app_idle(vt_app *a);           /* deferred work; 1 if something was done */
 void vt_app_resize(vt_app *a, int rows, int cols);
 void vt_app_run(vt_app *a);            /* the main loop (draw, key, idle) */
+/* After start-up: log a privileged session, say so if /PRIVILEGES found none. */
+void vt_app_session(vt_app *a, int asked_privileged);
 
 /* internals shared by vt_app.c, vt_draw.c and vt_view.c */
 int  vt_cur_node(vt_app *a);
@@ -161,6 +173,17 @@ void vt_op_prune(vt_app *a);
 void vt_op_graft(vt_app *a);
 void vt_op_graft_done(vt_app *a, const char *text);
 void vt_sync_children(vt_app *a, int node);
+
+/* vt_attr.c: security and attributes, search, compare, print (Phase 4) */
+void vt_attr_open(vt_app *a, int tagged);
+void vt_attr_key(vt_app *a, int key);
+void vt_attr_draw(vt_app *a);
+void vt_attr_prompt_done(vt_app *a, int kind, const char *text);
+void vt_op_search(vt_app *a);
+void vt_op_search_done(vt_app *a, const char *text);
+void vt_op_compare(vt_app *a);
+void vt_op_print(vt_app *a, int tagged);
+void vt_view_open_path(vt_app *a, const char *path, int temp);
 void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *l2);
 
 #endif

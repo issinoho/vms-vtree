@@ -128,7 +128,15 @@ and agrees); prune a branch (preview, typed name, aliases never followed, D8); g
 (move a branch within a volume); finish cross-volume move. Operation log. D5's
 privileged mode decided here.
 
-## Phase 4: attributes and security
+## Phase 4: attributes and security (built and tested 2026-10-24)
+
+Status: done on x86 and IA64 (N14): the attributes screen (GOLD A on a directory, A
+on a file, GOLD A for the tagged files) sets protection (DCL syntax; classes not
+named stay, per file), owner (name or UIC), ACL entries (add; delete the chosen one;
+GOLD D the whole ACL), expiration date, /NOBACKUP and erase-on-delete. Search (S),
+compare two tagged files (GOLD V, DIFFERENCES into the viewer), print (O / GOLD O,
+SYS$PRINT; not run on the nodes, to keep jobs off the real queue). Privileged mode
+(D5). Not done: version limits, ACE editing in place (delete and add instead).
 
 Protection, owner, ACL editing (add, delete, replace ACEs; `$PARSE_ACL` and
 `$FORMAT_ACL`), file characteristics (expiration date, `/NOBACKUP`, version limit,

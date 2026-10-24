@@ -3,7 +3,7 @@
 CC ?= cc
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -Werror -g -Isrc/core -Isrc/app -Isrc/plat -Isrc/plat/stub
 CORE = src/core/vt_util.c src/core/vt_match.c src/core/vt_edit.c src/core/vt_tree.c src/core/vt_screen.c src/core/vt_ansi.c src/core/vt_plan.c
-APP = src/app/vt_app.c src/app/vt_draw.c src/app/vt_view.c src/app/vt_ops.c src/app/vt_del.c
+APP = src/app/vt_app.c src/app/vt_draw.c src/app/vt_view.c src/app/vt_ops.c src/app/vt_del.c src/app/vt_attr.c
 HDRS = $(wildcard src/core/*.h src/app/*.h src/plat/*.h src/plat/stub/*.h)
 
 all: test
