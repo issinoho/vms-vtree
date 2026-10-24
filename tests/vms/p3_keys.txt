@@ -1,0 +1,43 @@
+# PTYDRIVE script for Phase 3, inside the work directory's [.LIVE] (test_live.com P1).
+# Before every destructive step the cursor is put in place exactly: L (Log) to a
+# directory, or a filespec that leaves exactly one file. Any question that should
+# not come is followed by an "n" as a safety net.
+2 dcl | set terminal/width=80/page=24\r
+5 start | vtree [.live]\r
+2 files | \r
+2 only notes;1 | f\x15NOTES.TXT;1\r
+3 delete asked | \e[3~
+2 answer no | n
+3 delete again | \e[3~
+3 answer yes | y
+2 only notes | f\x15NOTES.TXT\r
+2 copy as | c
+2 same name | \r
+3 same dir | \r
+3 purge prompt | p
+3 keep one | \x15 1\r
+3 purge yes | y
+2 all files | f\x15\r
+2 to tree | \r
+2 log live | l\x15[.LIVE]\r
+2 mkdir | m
+3 trash | TRASH\r
+3 log alpha | l\x15[.LIVE.ALPHA]\r
+2 graft | \eOPg
+3 to trash | \x15[.LIVE.TRASH]\r
+3 graft yes | y
+2 safety 1 | n
+3 log trash | l\x15[.LIVE.TRASH]\r
+3 prune | \eOPp
+4 prune yes | y
+3 type name | TRASH\r
+2 safety 2 | n
+3 log gamma | l\x15[.LIVE.GAMMA]\r
+2 rmdir | \e[3~
+3 rmdir yes | y
+2 safety 3 | n
+3 log live again | l\x15[.LIVE]\r
+4 prune live | \eOPp
+2 safety 4 | n
+2 safety 5 | n
+3 quit | \e[21~

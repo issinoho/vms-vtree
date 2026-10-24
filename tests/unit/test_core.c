@@ -9,6 +9,7 @@
 #include "vt_screen.h"
 #include "vt_ansi.h"
 #include "vt_plan.h"
+#include "vt_platform.h"
 
 static int checks, fails;
 #define CHECK(c) do { checks++; if (!(c)) { fails++; printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #c); } } while (0)
@@ -225,6 +226,8 @@ static void test_ansi(void)
 
 static void test_plan(void)
 {
+    /* VTREE's own conditions must read as failures */
+    CHECK(!(VTP_STOPPED & 1) && !(VTP_NOTEXACT & 1) && !(VTP_DIFFERENT & 1));
     char n[64], t[64];
     CHECK(vt_name_apply("*.BAK", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
     CHECK_STR(n, "LOGIN"); CHECK_STR(t, ".BAK");
@@ -251,6 +254,39 @@ static void test_plan(void)
     CHECK(vt_version_room(3, 3, 1, 3) == VT_ROOM_LIMIT);
     CHECK(vt_version_room(3, 3, 1, 32767) == VT_ROOM_OK);
     CHECK(vt_version_room(1, 32767, 1, 0) == VT_ROOM_32767);
+    {
+        vt_nver f[6] = { { "A", ".TXT", 3 }, { "A", ".TXT", 1 }, { "a", ".txt", 2 },
+                         { "B", ".TXT", 7 }, { "A", ".COM", 1 }, { "B", ".TXT", 5 } };
+        int out[6], n;
+        n = vt_purge_select(f, 6, 1, out);
+        CHECK(n == 3 && !out[0] && out[1] && out[2] && !out[3] && !out[4] && out[5]);
+        n = vt_purge_select(f, 6, 2, out);
+        CHECK(n == 1 && out[1] && !out[2] && !out[5]);
+        n = vt_purge_select(f, 6, 0, out);              /* 0 means 1: never all */
+        CHECK(n == 3);
+    }
+    {
+        vt_tree tr;
+        unsigned short fid[3] = { 1, 1, 0 };
+        int r, a, b, c, d, vis[16];
+        vt_tree_init(&tr);
+        r = vt_tree_root(&tr, "D:");
+        a = vt_tree_child(&tr, r, "A", fid, 0);
+        b = vt_tree_child(&tr, a, "B", fid, 0);
+        c = vt_tree_child(&tr, r, "C", fid, 0);
+        d = vt_tree_child(&tr, b, "D", fid, 0);
+        CHECK(!vt_tree_move(&tr, a, d));                /* not into its own branch */
+        CHECK(!vt_tree_move(&tr, a, a));
+        CHECK(vt_tree_move(&tr, b, c));                 /* graft B (with D) under C */
+        CHECK(tr.n[b].parent == c && tr.n[c].child == b && tr.n[a].child == -1);
+        CHECK(tr.n[b].depth == 2 && tr.n[d].depth == 3);
+        vt_tree_remove(&tr, c);
+        CHECK(tr.n[r].child == a && tr.n[a].next == -1);
+        CHECK((tr.n[b].flags & VT_N_DEAD) && (tr.n[d].flags & VT_N_DEAD));
+        tr.n[r].flags |= VT_N_OPEN; tr.n[a].flags |= VT_N_OPEN;
+        CHECK(vt_tree_visible(&tr, vis, 16) == 2);
+        vt_tree_free(&tr);
+    }
     {
         vt_tree tr;
         unsigned short fid[3] = { 1, 1, 0 };

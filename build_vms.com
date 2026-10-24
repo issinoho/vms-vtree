@@ -11,7 +11,7 @@ $! Under /STANDARD=C99 only ANSI names get the DECC$ prefix: ALL_ENTRIES maps th
 $ cflags = "/STANDARD=C99/POINTER_SIZE=32/PREFIX_LIBRARY_ENTRIES=ALL_ENTRIES" -
          + "/INCLUDE=([.src.core],[.src.app],[.src.plat],[.src.plat.vms],[.src.plat.stub])"
 $ core = "vt_util,vt_match,vt_edit,vt_tree,vt_screen,vt_ansi,vt_plan"
-$ app = "vt_app,vt_draw,vt_view,vt_ops"
+$ app = "vt_app,vt_draw,vt_view,vt_ops,vt_del"
 $ i = 0
 $ core_loop:
 $   m = f$element(i, ",", core)

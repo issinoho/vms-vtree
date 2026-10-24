@@ -53,6 +53,22 @@ int vt_valid_dirname(const char *s)
     return 1;
 }
 
+int vt_purge_select(const vt_nver *f, int n, int keep, int *out)
+{
+    int i, j, marked = 0;
+    if (keep < 1) keep = 1;                   /* never every version */
+    for (i = 0; i < n; i++) {
+        int higher = 0;
+        for (j = 0; j < n; j++)
+            if (j != i && f[j].ver > f[i].ver && !vt_strcasecmp(f[j].name, f[i].name)
+                && !vt_strcasecmp(f[j].type, f[i].type))
+                higher++;
+        out[i] = higher >= keep;
+        marked += out[i];
+    }
+    return marked;
+}
+
 int vt_version_room(int count, int highest, int incoming, int limit)
 {
     if (highest + incoming > 32767) return VT_ROOM_32767;

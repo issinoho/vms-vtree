@@ -37,6 +37,7 @@ typedef struct {
 #define VT_N_ERROR  16      /* reading it failed: see scan_status */
 #define VT_N_NOLINK 32      /* its back-link could not be read: treated as an alias */
 #define VT_N_CLOSED (VT_N_ALIAS | VT_N_NOLINK)   /* a recursive command never passes it */
+#define VT_N_DEAD   64      /* deleted: unlinked from the tree, kept only as a slot */
 
 typedef struct {
     char *name;             /* directory name, or the device ("DKA0:") for a root */
@@ -78,6 +79,12 @@ int  vt_tree_reaches(const vt_tree *t, int a, int b);
 /* The highest node from which node is reachable in that sense. */
 int  vt_tree_reach_top(const vt_tree *t, int node);
 
+/* Take a node and everything below it out of the tree (after a delete or prune):
+   unlinked, marked dead, file lists emptied. */
+void vt_tree_remove(vt_tree *t, int node);
+/* Move a node (and its branch) under another parent, in name order (a graft).
+   Refused (0) if new_parent is node itself or inside its branch. */
+int  vt_tree_move(vt_tree *t, int node, int new_parent);
 /* Give a node a new name, keeping its siblings in name order. 0 on no memory. */
 int  vt_tree_rename(vt_tree *t, int node, const char *name);
 

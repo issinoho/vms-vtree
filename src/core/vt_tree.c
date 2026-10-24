@@ -129,6 +129,57 @@ int vt_tree_within(const vt_tree *t, int a, int b)
     return 0;
 }
 
+static void unlink_node(vt_tree *t, int node)
+{
+    int parent = t->n[node].parent, *link;
+    if (parent < 0) {
+        link = &t->first_root;
+    } else link = &t->n[parent].child;
+    while (*link >= 0 && *link != node) link = &t->n[*link].next;
+    if (*link == node) *link = t->n[node].next;
+    t->n[node].next = -1;
+}
+
+static void insert_sorted(vt_tree *t, int node, int parent)
+{
+    int i, prev = -1;
+    for (i = t->n[parent].child; i >= 0 && vt_strcasecmp(t->n[i].name, t->n[node].name) < 0; i = t->n[i].next)
+        prev = i;
+    t->n[node].next = i;
+    if (prev < 0) t->n[parent].child = node; else t->n[prev].next = node;
+    t->n[node].parent = parent;
+}
+
+static void kill_branch(vt_tree *t, int node)
+{
+    int c;
+    for (c = t->n[node].child; c >= 0; c = t->n[c].next) kill_branch(t, c);
+    t->n[node].flags = VT_N_DEAD;
+    vt_flist_clear(&t->n[node].files);
+}
+
+void vt_tree_remove(vt_tree *t, int node)
+{
+    unlink_node(t, node);
+    kill_branch(t, node);
+}
+
+static void set_depth(vt_tree *t, int node, int depth)
+{
+    int c;
+    t->n[node].depth = depth;
+    for (c = t->n[node].child; c >= 0; c = t->n[c].next) set_depth(t, c, depth + 1);
+}
+
+int vt_tree_move(vt_tree *t, int node, int new_parent)
+{
+    if (t->n[node].parent < 0 || vt_tree_within(t, node, new_parent)) return 0;
+    unlink_node(t, node);
+    insert_sorted(t, node, new_parent);
+    set_depth(t, node, t->n[new_parent].depth + 1);
+    return 1;
+}
+
 int vt_tree_rename(vt_tree *t, int node, const char *name)
 {
     int parent = t->n[node].parent, i, prev = -1, *link;

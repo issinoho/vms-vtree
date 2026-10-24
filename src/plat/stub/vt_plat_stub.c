@@ -11,7 +11,7 @@ typedef struct {
     char dev[32], dir[VT_SPEC_MAX], name[VT_NAME_MAX], type[VT_NAME_MAX];
     unsigned int ver;
     unsigned short fid[3];
-    int is_dir, is_alias, denied, nolink;
+    int is_dir, is_alias, denied, nolink, denied_delete;
     vt_attrs a;
     char *content;
     size_t len;
@@ -207,6 +207,10 @@ void vtp_message(unsigned int st, char *buf, int size)
 {
     const char *m = "%NONAME-?-NOMSG, message number";
     if (st & 1) m = "%SYSTEM-S-NORMAL, normal successful completion";
+    else if (st == VTP_STOPPED) m = "stopped by a key";
+    else if (st == VTP_NOTEXACT) m = "not one exact file version: refused";
+    else if (st == VTP_DIFFERENT) m = "the files differ";
+    else if (st == 0x2C2u) m = "%SYSTEM-W-DIRNOTEMPTY, directory file is not empty";
     else if (st == STUB_NOPRIV) m = "%SYSTEM-F-NOPRIV, insufficient privilege or object protection violation";
     else if (st == STUB_DNF) m = "%RMS-E-DNF, directory not found";
     snprintf(buf, (size_t) size, "%s", m);
@@ -449,6 +453,24 @@ unsigned int vtp_rename(const char *from, const char *to, char *result, int size
     if (!dir_exists(dev, dir)) return STUB_DNF;
     if (find(dev, dir, name, type, (unsigned int) ver)) return STUB_FEX;
     if (f->is_dir && (f->a.prot & 0x0080)) return 0x1C0F4u;      /* RMS$_RMV: no D */
+    if (f->is_dir) {
+        /* everything under the directory goes with it, as on a real disk */
+        char oldp[VT_SPEC_MAX], newp[VT_SPEC_MAX];
+        size_t ol;
+        int i;
+        vt_dir_child(f->dir, f->name, oldp, sizeof oldp);
+        vt_dir_child(dir, name, newp, sizeof newp);
+        ol = strlen(oldp) - 1;                                     /* without the ] */
+        for (i = 0; i < nfiles; i++) {
+            char *d = files[i].dir;
+            if (!vt_strcasecmp(files[i].dev, f->dev) && !vt_strncasecmp(d, oldp, ol)
+                && (d[ol] == ']' || d[ol] == '.')) {
+                char t[VT_SPEC_MAX];
+                snprintf(t, sizeof t, "%.*s%s", (int) strlen(newp) - 1, newp, d + ol);
+                vt_strlcpy(d, t, VT_SPEC_MAX);
+            }
+        }
+    }
     vt_strlcpy(f->dir, dir, sizeof f->dir);
     vt_strlcpy(f->name, name, sizeof f->name);
     vt_strlcpy(f->type, type, sizeof f->type);
@@ -497,3 +519,47 @@ unsigned int vtp_set_prot(const char *path, unsigned short prot)
 
 /* The tests queue their answers before the command, so nothing is thrown away. */
 void vtp_flush_keys(void) { }
+
+/* ---------- Phase 3 ---------- */
+
+unsigned int vtp_delete(const char *path)
+{
+    const char *semi = strrchr(path, ';');
+    sfile *f;
+    int i;
+    if (strchr(path, '*') || strchr(path, '%') || !semi || atoi(semi + 1) <= 0) return VTP_NOTEXACT;
+    f = by_path(path);
+    if (!f) return 0x910u;
+    if (f->denied_delete) return STUB_NOPRIV;
+    if (f->is_dir) {
+        char sub[VT_SPEC_MAX];
+        if (f->is_alias) return 0x1C0F4u;        /* the test world never gets here */
+        vt_dir_child(f->dir, f->name, sub, sizeof sub);
+        if (f->a.prot & 0x0080) return STUB_NOPRIV;                /* no D */
+        for (i = 0; i < nfiles; i++)
+            if (!vt_strcasecmp(files[i].dev, f->dev) && !vt_strcasecmp(files[i].dir, sub))
+                return 0x2C2u;                                     /* SS$_DIRNOTEMPTY */
+    }
+    free(f->content);
+    *f = files[--nfiles];
+    return VTP_OK;
+}
+
+unsigned int vtp_compare(const char *a, const char *b)
+{
+    sfile *x = by_path(a), *y = by_path(b);
+    if (!x || !y) return 0x910u;
+    if (x->len != y->len || (x->len && memcmp(x->content, y->content, x->len))) return VTP_DIFFERENT;
+    return VTP_OK;
+}
+
+void stub_no_delete(const char *dev, const char *dir, const char *name)
+{
+    int i;
+    for (i = 0; i < nfiles; i++) {
+        char nt[2 * VT_NAME_MAX];
+        snprintf(nt, sizeof nt, "%s%s", files[i].name, files[i].type);
+        if (!vt_strcasecmp(files[i].dev, dev) && !vt_strcasecmp(files[i].dir, dir) && !vt_strcasecmp(nt, name))
+            files[i].denied_delete = 1;
+    }
+}

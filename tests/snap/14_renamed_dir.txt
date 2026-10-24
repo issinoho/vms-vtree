@@ -21,4 +21,4 @@
 │                                                         │                    │
 └─────────────────────────────────────────────────────────┴────────────────────┘
  Nothing done
- COMMANDS  PF1 GOLD   Return files   + - * open/close   Help   F10 exit
+ COMMANDS  PF1 GOLD  Return files  Avail  eXecute  + - *  Help  F10 exit

@@ -23,7 +23,7 @@ int vt_find_node(vt_app *a, const char *dev, const char *dir)
     return node;
 }
 
-static void log_op(vt_app *a, const char *what, const char *from, const char *to, unsigned int st)
+void vt_log_op(vt_app *a, const char *what, const char *from, const char *to, unsigned int st)
 {
     char t[32], m[160], line[3 * VT_SPEC_MAX];
     (void) a;
@@ -35,7 +35,7 @@ static void log_op(vt_app *a, const char *what, const char *from, const char *to
 }
 
 /* Read a node's files again if they were read before (the operation changed them). */
-static void refresh(vt_app *a, int node)
+void vt_refresh(vt_app *a, int node)
 {
     if (node < 0) return;
     if (a->t.n[node].files.loaded) vt_load_files(a, node);
@@ -87,7 +87,7 @@ int vt_ask(vt_app *a, const char *question, const char *choices, int def)
 
 /* ---------- choosing the sources ---------- */
 
-static int collect(vt_app *a, int tagged)
+int vt_collect(vt_app *a, int tagged)
 {
     int i, n = 0;
     free_op(a);
@@ -124,7 +124,7 @@ static void current_dir(vt_app *a, char *out, int size)
 void vt_op_start(vt_app *a, int kind, int tagged)
 {
     char label[48], def[VT_SPEC_MAX];
-    int n = collect(a, tagged);
+    int n = vt_collect(a, tagged);
     if (!n) { vt_set_msg(a, 1, tagged ? "No files are tagged in this list" : "No file here"); return; }
     a->op_kind = kind;
     if (n == 1) snprintf(def, sizeof def, "%s%s", a->op_src[0].name, a->op_src[0].type);
@@ -209,12 +209,12 @@ static int destination(vt_app *a, const char *spec, char *dev, int devsz, char *
         snprintf(q, sizeof q, "%s%s does not exist. Create it?  Y yes  N no", d1, d2);
         if (vt_ask(a, q, "YN", 'N') != 'Y') { vt_set_msg(a, 0, "Nothing done"); return 0; }
         st = vtp_mkdir(d1, d2);
-        if (!(st & 1)) { log_op(a, "MKDIR", spec, 0, st); vt_status_msg(a, d2, st); return 0; }
+        if (!(st & 1)) { vt_log_op(a, "MKDIR", spec, 0, st); vt_status_msg(a, d2, st); return 0; }
         st = vtp_locate(spec, dev, devsz, dir, dirsz);
         {
             char full[2 * VT_SPEC_MAX];
             snprintf(full, sizeof full, "%s%s", (st & 1) ? dev : d1, (st & 1) ? dir : d2);
-            log_op(a, "MKDIR", full, 0, VTP_CREATED);
+            vt_log_op(a, "MKDIR", full, 0, VTP_CREATED);
         }
         if (!(st & 1)) { vt_status_msg(a, spec, st); return 0; }
         {   /* show it in the tree if its parent is there */
@@ -242,7 +242,7 @@ static void run(vt_app *a, const char *dest_spec)
 {
     char dev[VT_SPEC_MAX], dir[VT_SPEC_MAX], q[3 * VT_SPEC_MAX];
     const char *verb = a->op_kind == OP_COPY ? "Copy" : a->op_kind == OP_MOVE ? "Move" : "Rename";
-    int i, done = 0, failed = 0, skipped = 0, dnode, stop = 0, nodes[64], nn = 0;
+    int i, done = 0, failed = 0, skipped = 0, dnode, stop = 0, nodes[64], nn = 0, across = 0;
     unsigned long blocks = 0;
 
     if (a->op_kind == OP_RENAME) {
@@ -264,14 +264,22 @@ static void run(vt_app *a, const char *dest_spec)
         char sdev[VT_SPEC_MAX], sdir[VT_SPEC_MAX];
         vt_tree_spec(&a->t, a->op_src[0].node, sdev, sizeof sdev, sdir, sizeof sdir);
         if (!same_dev(sdev, dev)) {
-            vt_set_msg(a, 1, "%s is on another disk: Copy it (moving between disks comes with deleting, Phase 3)", dev);
-            return;
+            /* Another disk: copy, compare block by block, and only then delete the
+               original. The copy is a new version there, as with Copy. */
+            if (a->op_kind != OP_MOVE) { vt_set_msg(a, 1, "Rename stays on one disk"); return; }
+            across = 1;
         }
     }
-    if (!plan(a, a->op_pattern, dev, dir, a->op_kind == OP_COPY)) return;
+    if (!plan(a, a->op_pattern, dev, dir, a->op_kind == OP_COPY || across)) return;
     for (i = 0; i < a->op_n; i++) blocks += a->op_src[i].blocks;
 
-    if (a->op_n > 1) {
+    if (across) {
+        char b[32];
+        snprintf(q, sizeof q, "Move %d file%s (%s blocks) to another disk, %s%s: copy, compare, then "
+                 "delete each original?  Y yes  N no", a->op_n, a->op_n == 1 ? "" : "s",
+                 vt_commas(blocks, b, sizeof b), dev, dir);
+        if (vt_ask(a, q, "YN", 'N') != 'Y') { vt_set_msg(a, 0, "Nothing done"); return; }
+    } else if (a->op_n > 1) {
         char b[32];
         snprintf(q, sizeof q, "%s %d files (%s blocks) %s %s%s?  Y yes  N no", verb, a->op_n,
                  vt_commas(blocks, b, sizeof b), a->op_kind == OP_RENAME ? "in" : "to", dev, dir);
@@ -282,7 +290,21 @@ static void run(vt_app *a, const char *dest_spec)
         vt_src *s = &a->op_src[i];
         char to[3 * VT_SPEC_MAX], res[VT_SPEC_MAX], m[200];
         unsigned int st;
-        if (a->op_kind == OP_COPY) {
+        if (across) {
+            snprintf(to, sizeof to, "%s%s%s%s", dev, dir, s->oname, s->otype);
+            st = vtp_copy(s->path, to, res, sizeof res);
+            vt_log_op(a, "COPY", s->path, (st & 1) ? res : to, st);
+            if (st & 1) {
+                st = vtp_compare(s->path, res);
+                vt_log_op(a, "CHECK", res, 0, st);
+                if (st & 1) {
+                    st = vtp_delete(s->path);
+                    vt_log_op(a, "DELETE", s->path, 0, st);
+                } else st = VTP_DIFFERENT;       /* the copy stays; the original too */
+            }
+            if (st & 1) { done++; if (nn < 64) nodes[nn++] = s->node; continue; }
+            goto failed_one;
+        } else if (a->op_kind == OP_COPY) {
             snprintf(to, sizeof to, "%s%s%s%s", dev, dir, s->oname, s->otype);
             st = vtp_copy(s->path, to, res, sizeof res);
         } else {
@@ -290,7 +312,7 @@ static void run(vt_app *a, const char *dest_spec)
             if (vt_strcasecmp(to, s->path) == 0) { skipped++; continue; }    /* already there */
             st = vtp_rename(s->path, to, res, sizeof res);
         }
-        log_op(a, a->op_kind == OP_COPY ? "COPY" : a->op_kind == OP_MOVE ? "MOVE" : "RENAME",
+        vt_log_op(a, a->op_kind == OP_COPY ? "COPY" : a->op_kind == OP_MOVE ? "MOVE" : "RENAME",
                s->path, (st & 1) ? res : to, st);
         if (st & 1) {
             done++;
@@ -298,8 +320,10 @@ static void run(vt_app *a, const char *dest_spec)
             if (nn < 64) nodes[nn++] = s->node;
             continue;
         }
+    failed_one:
         failed++;
-        vtp_message(st, m, sizeof m);
+        if (st == VTP_DIFFERENT) vt_strlcpy(m, "the copy differs from the original: original kept", sizeof m);
+        else vtp_message(st, m, sizeof m);
         if (i + 1 < a->op_n) {
             snprintf(q, sizeof q, "%s%s;%u: %.80s   S skip it  Q stop", s->name, s->type, s->ver, m);
             if (vt_ask(a, q, "SQ", 'Q') != 'S') stop = 1;
@@ -308,11 +332,11 @@ static void run(vt_app *a, const char *dest_spec)
 
     /* what changed, read again */
     dnode = vt_find_node(a, dev, dir);
-    refresh(a, dnode);
+    vt_refresh(a, dnode);
     for (i = 0; i < nn; i++) {
         int j, seen = 0;
         for (j = 0; j < i; j++) if (nodes[j] == nodes[i]) seen = 1;
-        if (!seen && nodes[i] != dnode && a->op_kind != OP_COPY) refresh(a, nodes[i]);
+        if (!seen && nodes[i] != dnode && a->op_kind != OP_COPY) vt_refresh(a, nodes[i]);
     }
     if (!failed || done)
         vt_set_msg(a, failed != 0, "%s: %d done%s%s%s", verb, done,
@@ -352,13 +376,13 @@ void vt_op_prompt_done(vt_app *a, int kind, const char *text)
         {
             char full[2 * VT_SPEC_MAX];
             snprintf(full, sizeof full, "%s%s", dev, nd);
-            log_op(a, "MKDIR", full, 0, st);
+            vt_log_op(a, "MKDIR", full, 0, st);
         }
         if (st == VTP_OK) { vt_set_msg(a, 1, "%s%s exists already", dev, nd); return; }
         if (!(st & 1)) { vt_status_msg(a, nd, st); return; }
         a->t.n[node].flags &= (unsigned char) ~VT_N_SCANNED;
         vt_scan_node(a, node);
-        refresh(a, node);
+        vt_refresh(a, node);
         a->t.n[node].flags |= VT_N_OPEN;
         child = vt_tree_find_child(&a->t, node, text);
         vt_rebuild_vis(a);
@@ -404,21 +428,21 @@ void vt_op_prompt_done(vt_app *a, int kind, const char *text)
                          vt_fmt_prot(prot, ps, sizeof ps));
                 if (vt_ask(a, q, "YN", 'N') != 'Y') { vt_set_msg(a, 0, "Nothing done"); return; }
                 st = vtp_set_prot(from, (unsigned short) (prot & ~0x0080));
-                log_op(a, "PROT", from, 0, st);
+                vt_log_op(a, "PROT", from, 0, st);
                 if (!(st & 1)) { vt_status_msg(a, from, st); return; }
                 restore = 1;
             }
             st = vtp_rename(from, to, res, sizeof res);
-            log_op(a, "RENAME", from, (st & 1) ? res : to, st);
+            vt_log_op(a, "RENAME", from, (st & 1) ? res : to, st);
             if (restore) {                          /* back as it was, wherever it now is */
                 unsigned int pst = vtp_set_prot((st & 1) ? res : from, prot);
-                log_op(a, "PROT", (st & 1) ? res : from, 0, pst);
+                vt_log_op(a, "PROT", (st & 1) ? res : from, 0, pst);
                 if (!(pst & 1)) { vt_status_msg(a, "Putting the protection back", pst); return; }
             }
         }
         if (!(st & 1)) { vt_status_msg(a, a->t.n[node].name, st); return; }
         vt_tree_rename(&a->t, node, text);          /* every path below follows the name */
-        refresh(a, parent);
+        vt_refresh(a, parent);
         vt_rebuild_vis(a);
         vt_set_cursor_node(a, node);
         vt_set_msg(a, 0, "Renamed to %s", text);
@@ -462,14 +486,14 @@ void vt_op_edit(vt_app *a, const vt_ref *r)
     vt_ref_path(a, r, path, sizeof path);
     st = vtp_spawn(path);
     if (!(st & 1)) vt_status_msg(a, "Editor", st);
-    refresh(a, node);                       /* a new version, perhaps */
+    vt_refresh(a, node);                       /* a new version, perhaps */
 }
 
 void vt_op_exec(vt_app *a)
 {
     unsigned int st = vtp_spawn(0);
     if (!(st & 1)) vt_status_msg(a, "Subprocess", st);
-    if (a->list_node >= 0) refresh(a, a->list_node);
+    if (a->list_node >= 0) vt_refresh(a, a->list_node);
 }
 
 /* ---------- pointing at the destination in the tree ---------- */
@@ -520,4 +544,18 @@ int vt_pick_key(vt_app *a, int key)
         for (i = 0; ok[i]; i++) if (ok[i] == key) return 0;
         return -1;
     }
+}
+
+vt_file *vt_dir_entry(vt_app *a, int node)
+{
+    int parent = a->t.n[node].parent, i;
+    vt_flist *fl;
+    if (parent < 0) return 0;
+    vt_load_files(a, parent);
+    fl = &a->t.n[parent].files;
+    for (i = 0; i < fl->n; i++)
+        if ((fl->f[i].flags & VT_F_DIR) && fl->f[i].ver == 1
+            && !vt_strcasecmp(fl->f[i].name, a->t.n[node].name))
+            return &fl->f[i];
+    return 0;
 }

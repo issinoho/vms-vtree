@@ -14,6 +14,12 @@ int vt_pattern_wild(const char *pattern);
 /* A name for a new directory: letters, digits, $ _ and -, 1 to 39 characters. */
 int vt_valid_dirname(const char *s);
 
+/* Purge: given one directory's files as name/type/version triples, mark (out[i] = 1)
+   every version beyond the keep highest of its name.type. Order of the input is
+   free. Returns how many were marked. keep >= 1. */
+typedef struct { const char *name, *type; unsigned int ver; } vt_nver;
+int vt_purge_select(const vt_nver *f, int n, int keep, int *out);
+
 enum { VT_ROOM_OK, VT_ROOM_LIMIT, VT_ROOM_32767 };
 /* Can incoming new versions be added to count existing ones (highest h) without
    RMS deleting old ones (limit, 0 or >= 32767 = none) or passing 32767? */

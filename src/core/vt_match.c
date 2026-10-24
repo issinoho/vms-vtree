@@ -96,6 +96,15 @@ int vt_filter_parse(vt_filter *f, const char *text)
     return 1;
 }
 
+int vt_filter_match_nt(const vt_filter *f, const char *name, const char *type)
+{
+    int i;
+    if (*type == '.') type++;
+    for (i = 0; i < f->count; i++)
+        if (vt_wild(f->p[i].name, name) && vt_wild(f->p[i].type, type)) return 1;
+    return 0;
+}
+
 int vt_filter_match(const vt_filter *f, const char *name, const char *type,
                     unsigned int ver, int highest)
 {

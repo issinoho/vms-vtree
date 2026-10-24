@@ -95,11 +95,15 @@ The file window lists all versions (`*.*;*`) by default, as DIRECTORY does. A ke
 switches to "highest version only". A deletion takes the exact version selected unless
 the user chose "all versions".
 
-## D10. Destructive operations: preview, confirm, log (2026-10-24, proposed; partly in use)
+## D10. Destructive operations: preview, confirm, log (2026-10-24, confirmed by the user; in use)
 
 In use since Phase 2: the operation log, Y/N questions defaulting to No, typeahead
 thrown away before each question (N12), skip-or-stop on a failure, and the
-owned-and-agreed rule for adding D to a directory (N11). The rest is for Phase 3.
+owned-and-agreed rule for adding D to a directory (N11). Phase 3 adds the rest: a
+preview page of what will go, a typed name for a prune, decisions made from a fresh
+reading of the directories (each file found again by its file ID), exact versions
+only (`vtp_delete` refuses anything else itself), and refusal of any prune that meets
+an alias, an unchecked entry or a directory it can't read completely.
 
 
 - Every delete, purge, overwrite, prune, protection or owner change first shows what it

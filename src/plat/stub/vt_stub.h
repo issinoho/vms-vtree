@@ -31,6 +31,8 @@ void stub_fail_copy(const char *name);
    ("DCL" for a subprocess, "" if none). */
 const char *stub_log(void);
 const char *stub_spawned(void);
+/* Deleting dev:dir name.type (any version) will fail with NOPRIV. */
+void stub_no_delete(const char *dev, const char *dir, const char *nametype);
 #define STUB_FEX 0x18292u       /* RMS$_FEX: file already exists */
 /* The next keys vtp_key will return; VK_NONE ends the list. */
 void stub_keys(const int *keys);

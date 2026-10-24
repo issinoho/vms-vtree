@@ -1,0 +1,24 @@
+ VTREE   DKA0:[USERS.IAIN]                                    24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────┬────────────────────┐
+│ DKA0:                                                   │ FILE               │
+│ ├─SYS0 +                                                │  *.*;*             │
+│ ├─USERS                                                 │ DISK               │
+│ │ ├─GUEST                                               │  DKA0:             │
+│ │ ├─IAIN                                                │  VMSSYS            │
+│ │ ├─ODD (unchecked)                                     │  Free    1,234,567 │
+│ │ └─SYSTEM                                              │ DIRECTORY          │
+│ └─VMS$COMMON                                            │  Files           1 │
+│                                                         │  Blocks          3 │
+│                                                         │ MATCHING           │
+│                                                         │  Files           1 │
+│                                                         │  Blocks          3 │
+├─────────────────────────────────────────────────────────┤ TAGGED             │
+│◆MAKEFILE.;1                                             │  Files           1 │
+│                                                         │  Blocks          3 │
+│                                                         │                    │
+│                                                         │ IAIN [200,101]     │
+│                                                         │  Privs off         │
+│                                                         │                    │
+└─────────────────────────────────────────────────────────┴────────────────────┘
+ Pruned DKA0:[USERS.IAIN.VMS_VTREE]: 5 files and directories deleted
+ COMMANDS  PF1 GOLD  Return files  Avail  eXecute  + - *  Help  F10 exit

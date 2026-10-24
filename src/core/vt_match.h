@@ -29,5 +29,7 @@ int vt_filter_parse(vt_filter *f, const char *text);
    version of this name.type in its directory. */
 int vt_filter_match(const vt_filter *f, const char *name, const char *type,
                     unsigned int ver, int highest);
+/* The same, by name and type only (versions not considered): for purge. */
+int vt_filter_match_nt(const vt_filter *f, const char *name, const char *type);
 
 #endif

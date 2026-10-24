@@ -5,10 +5,10 @@ XTree Gold and dressed as a DEC application: a directory tree above a file windo
 one-letter commands, tagging, VT line drawing, the LK201 editing keys, and PF1 as the
 GOLD key for the second set of commands.
 
-**Status: early development.** Browsing (Phase 1) and the operations that lose
-nothing (Phase 2: make and rename directories, copy, move within a disk, rename,
-edit, DCL subprocess) work on x86-64 and IA64. Nothing deletes yet. See
-[docs/PLAN.md](docs/PLAN.md).
+**Status: early development.** Browsing (Phase 1), the operations that lose nothing
+(Phase 2: make and rename directories, copy, move, rename, edit, DCL subprocess) and
+deleting (Phase 3: delete, purge, delete a directory, prune a branch, graft) work on
+x86-64 and IA64. Next: protection, owner and ACLs. See [docs/PLAN.md](docs/PLAN.md).
 
 ## Trying it
 
@@ -29,6 +29,9 @@ shows the keys, F10 or Ctrl/Z leaves.
   READALL, GRPPRV) while it runs, so it can only do what protection allows.
 - Copy behaves as DCL COPY does, never overwrites (a new version), and refuses a copy
   or move that would make RMS delete old versions because of a version limit.
+- A delete shows what will go and asks; a prune also wants the directory's name typed
+  back, and is refused if anything in the branch is an alias or can't be read. Only
+  exact versions are deleted, chosen from a fresh reading of the disk.
 - Every change goes to an operation log (`SYS$LOGIN:VTREE.LOG`, or `VTREE$LOG`).
   Questions default to No, and keys typed ahead never answer them.
 - It never follows a directory alias in a recursive operation.

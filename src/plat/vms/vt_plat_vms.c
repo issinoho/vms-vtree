@@ -238,6 +238,9 @@ void vtp_message(unsigned int st, char *buf, int size)
 {
     struct dsc$descriptor_s d;
     unsigned short len = 0;
+    if (st == VTP_STOPPED) { vt_strlcpy(buf, "stopped by a key", (size_t) size); return; }
+    if (st == VTP_NOTEXACT) { vt_strlcpy(buf, "not one exact file version: refused", (size_t) size); return; }
+    if (st == VTP_DIFFERENT) { vt_strlcpy(buf, "the files differ", (size_t) size); return; }
     dsc(&d, buf, (unsigned short) (size - 1));
     if (!(sys$getmsg(st, &len, &d, 15, 0) & 1)) { snprintf(buf, (size_t) size, "%%X%08X", st); return; }
     buf[len] = '\0';
@@ -884,4 +887,69 @@ void vtp_flush_keys(void)
 {
     int n = 0;
     while (started && n++ < 512 && vtp_key(0) != VK_TIMEOUT) ;
+}
+
+/* ---------- Phase 3 ---------- */
+
+/* One exact version, no wildcards: checked here as well as by the caller. */
+static int exact_spec(const char *path)
+{
+    const char *semi = 0, *p;
+    for (p = path; *p; p++) {
+        if (*p == '^' && p[1]) { p++; continue; }
+        if (*p == '*' || *p == '%' || *p == '"') return 0;
+        if (*p == ';') semi = p;
+        if (*p == '.' && p[1] == '.' && p[2] == '.') return 0;
+    }
+    if (!semi || !semi[1]) return 0;
+    for (p = semi + 1; *p; p++) if (*p < '0' || *p > '9') return 0;
+    return atoi(semi + 1) > 0;
+}
+
+unsigned int vtp_delete(const char *path)
+{
+    static char esa[NAML$C_MAXRSS + 1];
+    struct FAB fab;
+    struct NAML naml;
+    if (!exact_spec(path)) return VTP_NOTEXACT;
+    naml_setup(&fab, &naml, path, esa, 0);
+    return sys$erase(&fab, 0, 0);
+}
+
+unsigned int vtp_compare(const char *pa, const char *pb)
+{
+    static char ea[NAML$C_MAXRSS + 1], eb[NAML$C_MAXRSS + 1];
+    static char ba[32 * 512], bb[32 * 512];
+    struct FAB fa, fb;
+    struct NAML na, nb;
+    struct RAB ra, rb;
+    unsigned int st, sa, sb, vbn = 1, result = SS$_NORMAL;
+    naml_setup(&fa, &na, pa, ea, 0);
+    naml_setup(&fb, &nb, pb, eb, 0);
+    fa.fab$b_fac = fb.fab$b_fac = FAB$M_GET | FAB$M_BIO;
+    fa.fab$b_shr = fb.fab$b_shr = FAB$M_SHRGET;
+    st = sys$open(&fa, 0, 0);
+    if (!(st & 1)) return st;
+    st = sys$open(&fb, 0, 0);
+    if (!(st & 1)) { sys$close(&fa, 0, 0); return st; }
+    ra = cc$rms_rab; rb = cc$rms_rab;
+    ra.rab$l_fab = &fa; rb.rab$l_fab = &fb;
+    ra.rab$l_rop = rb.rab$l_rop = RAB$M_BIO;
+    if (!((st = sys$connect(&ra, 0, 0)) & 1) || !((st = sys$connect(&rb, 0, 0)) & 1)) result = st;
+    if (fa.fab$b_org != fb.fab$b_org || fa.fab$b_rfm != fb.fab$b_rfm || fa.fab$b_rat != fb.fab$b_rat)
+        result = VTP_DIFFERENT;
+    while (result == SS$_NORMAL) {
+        ra.rab$l_bkt = rb.rab$l_bkt = vbn;
+        ra.rab$l_ubf = ba; rb.rab$l_ubf = bb;
+        ra.rab$w_usz = rb.rab$w_usz = sizeof ba;
+        sa = sys$read(&ra, 0, 0);
+        sb = sys$read(&rb, 0, 0);
+        if (sa == RMS$_EOF && sb == RMS$_EOF) break;
+        if (!(sa & 1) || !(sb & 1)) { result = (sa == RMS$_EOF || sb == RMS$_EOF) ? VTP_DIFFERENT : (!(sa & 1) ? sa : sb); break; }
+        if (ra.rab$w_rsz != rb.rab$w_rsz || memcmp(ba, bb, ra.rab$w_rsz)) { result = VTP_DIFFERENT; break; }
+        vbn += ra.rab$w_rsz / 512 ? ra.rab$w_rsz / 512 : 1;
+    }
+    sys$close(&fa, 0, 0);
+    sys$close(&fb, 0, 0);
+    return result;
 }

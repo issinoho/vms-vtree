@@ -111,7 +111,16 @@ pattern, or a directory; move within a volume (rename) and across volumes (copy,
 and only then delete the source: the delete part waits for Phase 3's safeguards). Edit
 and eXecute (spawn). Same tests, both nodes.
 
-## Phase 3: delete
+## Phase 3: delete (built and tested 2026-10-24)
+
+Status: done on x86 and IA64 (N13): delete versions (D/Remove, GOLD D tagged), purge
+(P, keep N, by the filespec's names), delete an empty directory (D in the tree),
+prune (GOLD P: preview, Y, name typed back), graft (GOLD G, same disk, never into its
+own branch), move between disks (copy, compare block by block, then delete).
+Tests: `make test` (147 + 104), `p3_keys.txt` on both nodes, Phase 1-2 scripts
+again. Cross-disk move is tested on Linux only: the nodes' test areas are each on one
+disk, and the scripts don't write outside the work directory. Open: D5's privileged
+mode.
 
 With D10's safeguards: delete a version, a file's versions, the tagged files; purge
 with `/KEEP`; delete an empty directory (protection D is set only if the user owns it

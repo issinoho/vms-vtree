@@ -41,6 +41,10 @@ XTree code, help text or artwork.
 
 ## Testing
 
+**Destructive test steps position themselves exactly** (Log to a directory, a
+filespec that leaves one file) and are followed by an "n" in case a question comes
+that shouldn't: arrow-key drift once aimed a prune at the work directory (N13).
+
 `make test` (Linux: unit checks and screen snapshots; `make snapshots` rewrites
 them, then read every changed one). `tools/live.sh <node> [step...]` uploads,
 runs `build_vms TEST` and drives VTREE on a pseudo-terminal; `tools/vtscreen.py

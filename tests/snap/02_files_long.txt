@@ -20,5 +20,5 @@
 │                                                         │  Privs off         │
 │                                                         │                    │
 └─────────────────────────────────────────────────────────┴────────────────────┘
- FILE  Copy Edit Filespec Info Move Rename Tag Untag View eXecute  = ;
+ FILE  Copy Delete Edit Filespec Info Move Purge Rename Tag Untag View eXecute
  COMMANDS  PF1 GOLD   Return tree   Select tag   Help   F10 tree

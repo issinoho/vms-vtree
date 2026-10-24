@@ -141,3 +141,19 @@ An early `p2_keys.txt` was a step out: the "y" in text meant for the editor answ
 a Y/N confirmation. `vt_ask` now throws away pending keystrokes before every question
 (`vtp_flush_keys`); in the stub, where the tests queue their answers in advance,
 it does nothing.
+
+## N13. Deleting, purging, pruning and grafting on the nodes (2026-10-24, both)
+
+`p3_keys.txt` in the test tree: an exact-version `$ERASE` per file; a purge keeping
+one version deleted only the older NOTES.TXT; a prune went deepest first (files, then
+each emptied directory after adding owner D to its `.DIR`); deleting a non-empty
+directory is refused by VTREE before the file system would refuse it. A prune of a
+branch holding a directory that can't be read (LOCKED) is refused with nothing
+deleted. `$RENAME` of `ALPHA.DIR` into another directory (graft) updates its
+back-link: afterwards it is a plain entry of its new parent (N5's test), and the
+prune that followed accepted it.
+
+An earlier version of the script reached its destructive steps by arrow keys, drifted,
+and aimed a prune at the whole work directory; VTREE refused (LOCKED inside), and the
+script's "n" answers were a second guard. The scripts now position with Log and
+exact filespecs before every destructive step (CLAUDE.md).

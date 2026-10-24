@@ -453,7 +453,7 @@ static void prompt_key(vt_app *a, int key)
         a->refs_dirty = 1;
         return;
     }
-    if ((kind == P_COPY_TO || kind == P_MOVE_TO) && (key == VK_SELECT || key == VK_TAB)) {
+    if ((kind == P_COPY_TO || kind == P_MOVE_TO || kind == P_GRAFT_TO) && (key == VK_SELECT || key == VK_TAB)) {
         vt_pick_start(a);                          /* point at it in the tree */
         return;
     }
@@ -483,6 +483,8 @@ static void prompt_key(vt_app *a, int key)
         vt_op_prompt_done(a, kind, text);
         break;
     }
+    case P_PURGE: { char t[16]; vt_strlcpy(t, a->edit.buf, sizeof t); vt_op_purge_done(a, t); break; }
+    case P_GRAFT_TO: { char t[VT_SPEC_MAX]; vt_strlcpy(t, a->edit.buf, sizeof t); vt_op_graft_done(a, t); break; }
     default: break;
     }
 }
@@ -590,6 +592,9 @@ static void tree_key(vt_app *a, int key, int gold)
         return;
     case 'M': case 'm': if (!gold) vt_op_mkdir(a); return;
     case 'R': case 'r': if (!gold) vt_op_rendir(a); return;
+    case 'D': case 'd': case VK_REMOVE: if (!gold) vt_op_rmdir(a); return;
+    case 'P': case 'p': if (gold) vt_op_prune(a); else vt_op_purge(a); return;
+    case 'G': case 'g': if (gold) vt_op_graft(a); return;
     case 'X': case 'x': vt_op_exec(a); return;
     default: return;
     }
@@ -644,6 +649,8 @@ static void file_key(vt_app *a, int key, int gold)
     case 'M': case 'm': vt_op_start(a, OP_MOVE, gold); break;
     case 'R': case 'r': vt_op_start(a, OP_RENAME, gold); break;
     case 'E': case 'e': if (r && !gold) vt_op_edit(a, r); break;
+    case 'D': case 'd': case VK_REMOVE: vt_op_delete(a, gold); break;
+    case 'P': case 'p': if (!gold) vt_op_purge(a); break;
     case 'X': case 'x': vt_op_exec(a); break;
     default: break;
     }

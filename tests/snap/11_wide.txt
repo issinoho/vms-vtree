@@ -26,5 +26,5 @@
 │                                                                                                             │                    │
 │                                                                                                             │                    │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────┴────────────────────┘
- DIR  Avail Branch Filespec Info Log Makedir Rename Showall Tag Untag eXecute
- COMMANDS  PF1 GOLD   Return files   + - * open/close   Help   F10 exit
+ DIR  Branch Delete Filespec Info Log Makedir Purge Rename Showall Tag Untag
+ COMMANDS  PF1 GOLD  Return files  Avail  eXecute  + - *  Help  F10 exit

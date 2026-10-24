@@ -61,7 +61,7 @@ void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *
             vt_put(s, r1, 1 + n, a->edit.buf + start, 0, width);
             s->cursor_on = 1; s->cursor_row = r1; s->cursor_col = 1 + n + a->edit.pos - start;
         }
-        if (a->prompt == P_COPY_TO || a->prompt == P_MOVE_TO)
+        if (a->prompt == P_COPY_TO || a->prompt == P_MOVE_TO || a->prompt == P_GRAFT_TO)
             menu_line(s, r2, "EDIT", "Return accept   Select or Tab: point in the tree   F10 cancel   Ctrl/U erase", VT_A_REV);
         else
             menu_line(s, r2, "EDIT", "Return accept   F10 cancel   Ctrl/U erase   Ctrl/H start   Ctrl/E end", VT_A_REV);
@@ -298,22 +298,22 @@ static void draw_main(vt_app *a)
         } else {
         vt_draw_title(a, title);
         if (a->gold)
-            vt_draw_bottom(a, "GOLD", "&Log whole disk  &Sort  &Tag branch  &Untag branch  &W reread  Up/Down top/end",
-                        "PF1 cancel GOLD");
+            vt_draw_bottom(a, "GOLD", "&Graft &Log whole disk &Prune &Sort &Tag/&Untag branch &W reread",
+                        "PF1 cancel GOLD   Up/Down top/end");
         else
-            vt_draw_bottom(a, "DIR", "&Avail &Branch &Filespec &Info &Log &Makedir &Rename &Showall &Tag &Untag e&Xecute",
-                        "PF1 GOLD   Return files   + - * open/close   Help   F10 exit");
+            vt_draw_bottom(a, "DIR", "&Branch &Delete &Filespec &Info &Log &Makedir &Purge &Rename &Showall &Tag &Untag",
+                        "PF1 GOLD  Return files  &Avail  e&Xecute  + - *  Help  F10 exit");
         }
     } else {
         draw_files(a, top + 1, bot - 1, 1, cx - 1, 1);
         if (a->mode == M_FILES && a->nrefs) vt_ref_path(a, &a->refs[a->fcur], title, sizeof title);
         vt_draw_title(a, title);
         if (a->gold)
-            vt_draw_bottom(a, "GOLD", "&Copy &Move &Rename tagged  &Sort  &Tag all  &Untag all  &W reread",
+            vt_draw_bottom(a, "GOLD", "&Copy &Delete &Move &Rename tagged  &Sort  &Tag/&Untag all  &W reread",
                            "PF1 cancel GOLD   Up/Down first/last");
         else
             vt_draw_bottom(a, a->kind == L_SHOWALL ? "SHOWALL" : a->kind == L_BRANCH ? "BRANCH" : "FILE",
-                        "&Copy &Edit &Filespec &Info &Move &Rename &Tag &Untag &View e&Xecute  &= &;",
+                        "&Copy &Delete &Edit &Filespec &Info &Move &Purge &Rename &Tag &Untag &View e&Xecute",
                         "PF1 GOLD   Return tree   Select tag   Help   F10 tree");
     }
 }
@@ -353,7 +353,8 @@ void vt_app_draw(vt_app *a)
     vt_screen_clear(&a->scr);
     switch (a->mode) {
     case M_VIEW: vt_view_fill(a, a->scr.rows - 4, a->scr.cols - 2); break;
-    case M_INFO: draw_text(a, "File information", "INFO"); break;
+    case M_INFO: draw_text(a, a->text_title[0] ? a->text_title : "File information",
+                           a->text_title[0] ? "CONFIRM" : "INFO"); break;
     case M_HELP: draw_text(a, "Help", "HELP"); break;
     case M_AVAIL: draw_avail(a); break;
     default: draw_main(a); break;

@@ -11,7 +11,8 @@
 #include "vt_screen.h"
 
 #define VTP_OK 1u
-#define VTP_STOPPED 0x1001u   /* a list callback asked to stop (not a VMS code) */
+/* VTREE's own conditions are all even (failures), so "st & 1" stays the test. */
+#define VTP_STOPPED 0x1000u   /* a list callback asked to stop (not a VMS code; even = failure) */
 
 typedef struct {
     char user[40];
@@ -116,6 +117,17 @@ unsigned int vtp_versions(const char *dev, const char *dir, const char *name, co
                           int *count, int *highest, int *limit);
 /* Set a file's protection word (S,O,G,W nibbles; a set bit denies R,W,E,D). */
 unsigned int vtp_set_prot(const char *path, unsigned short prot);
+/* ---------- Phase 3: deleting ---------- */
+
+/* Delete exactly one file: path must name one version (";n"), with no wildcard;
+   anything else is refused with VTP_NOTEXACT before RMS is called. A directory file
+   is deleted only if it is empty (the file system checks). */
+#define VTP_NOTEXACT 0x1004u
+unsigned int vtp_delete(const char *path);
+/* Compare two files block by block: VTP_OK if identical, VTP_DIFFERENT if not. */
+#define VTP_DIFFERENT 0x1006u
+unsigned int vtp_compare(const char *a, const char *b);
+
 /* Throw away keys typed ahead, so that they can never answer a question. */
 void vtp_flush_keys(void);
 /* Append one line to the operation log (VTREE$LOG, default SYS$LOGIN:VTREE.LOG). */

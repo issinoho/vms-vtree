@@ -14,7 +14,8 @@ enum { M_TREE, M_FILES, M_VIEW, M_INFO, M_HELP, M_AVAIL };
 enum { L_DIR, L_BRANCH, L_SHOWALL };
 enum { S_NAME, S_TYPE, S_SIZE, S_DATE };
 enum { P_NONE, P_FILESPEC, P_LOG, P_FIND, P_SORT, P_QUIT, P_ASK,
-       P_COPY_AS, P_COPY_TO, P_MOVE_TO, P_RENAME, P_MKDIR, P_RENDIR };
+       P_COPY_AS, P_COPY_TO, P_MOVE_TO, P_RENAME, P_MKDIR, P_RENDIR,
+       P_ASKTEXT, P_PURGE, P_GRAFT_TO };
 enum { OP_COPY = 1, OP_MOVE, OP_RENAME };
 
 typedef struct { int node, idx; } vt_ref;    /* a file: t.n[node].files.f[idx] */
@@ -85,6 +86,7 @@ typedef struct {
 
     vt_viewer view;
     char **info; int ninfo; int itop;              /* Info and Help text */
+    char text_title[64];                           /* the title of an M_INFO page */
     vtp_device devs[64]; int ndevs, dcur;
 
     int progress_count;
@@ -143,6 +145,22 @@ void vt_op_exec(vt_app *a);
 void vt_pick_start(vt_app *a);
 int  vt_pick_key(vt_app *a, int key);
 int  vt_find_node(vt_app *a, const char *dev, const char *dir);
+void vt_log_op(vt_app *a, const char *what, const char *from, const char *to, unsigned int st);
+int  vt_collect(vt_app *a, int tagged);
+void vt_refresh(vt_app *a, int node);
+/* An entry of the parent's list for a directory node (fresh read), or 0. */
+vt_file *vt_dir_entry(vt_app *a, int node);
+
+/* vt_del.c: deleting (Phase 3) */
+int  vt_ask_text(vt_app *a, const char *question, char *out, int size);
+void vt_op_delete(vt_app *a, int tagged);
+void vt_op_purge(vt_app *a);
+void vt_op_purge_done(vt_app *a, const char *text);
+void vt_op_rmdir(vt_app *a);
+void vt_op_prune(vt_app *a);
+void vt_op_graft(vt_app *a);
+void vt_op_graft_done(vt_app *a, const char *text);
+void vt_sync_children(vt_app *a, int node);
 void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *l2);
 
 #endif
