@@ -143,7 +143,15 @@ Protection, owner, ACL editing (add, delete, replace ACEs; `$PARSE_ACL` and
 erase on delete), directory version limit. Compare two files (DIFFERENCES in a
 subprocess), search the tagged files' contents, print to a queue.
 
-## Phase 5: kit and release
+## Phase 5: kit and release (kits built 2026-10-24; install and publishing wait for the user)
+
+Status: `tools/kit.sh x86` and `tools/kit.sh ia64` build the T0.1-0 kits after the
+native tests (`MAKE_KIT.COM` checks the image reports 0.1.0 with `-v`), in
+`out/kits/` with SHA256SUMS; `tests/vms/pcsi_install.com` installs and verifies.
+README banner (a real screen, `tools/banner.py`), badges and release notes
+(`out/release-notes.md`) follow the family's format. Not done here: PRODUCT INSTALL
+(the session was not allowed to make that system-wide change), the GitHub repo and
+release, the family site entry.
 
 PCSI kits for X86VMS and I64VMS (`tools/kit.sh`, producer ISSINOHO), a `VTREE` DCL
 verb (`SET COMMAND` from the startup procedure, `/PRIVILEGES` and a start directory),

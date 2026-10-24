@@ -1,0 +1,18 @@
+=product @PRODUCER@ @BASE@ VTREE @PCSIVERSION@ full
+1 'PRODUCER
+=prompt @PRODUCER@
+1 'PRODUCT
+=prompt VTREE @VERSION@ for OpenVMS (vms-vtree): a full-screen file manager in DEC style, early test
+1 'NOTICE
+=prompt VTREE is distributed under the MIT licence. This is an early test release.
+1 RELEASE_NOTES
+=prompt Documentation is in [VTREE]README.VMS under the installation directory.
+1 POST_INSTALL
+=prompt Post-installation tasks for VTREE (vms-vtree)
+    At boot, add to SYS$MANAGER:SYSTARTUP_VMS.COM:
+    $ @SYS$STARTUP:VTREE$STARTUP.COM
+    For users, in SYS$MANAGER:SYLOGIN.COM or their LOGIN.COM:
+    $ VTREE :== $VTREE:VTREE.EXE
+
+PRODUCT REMOVE VTREE deassigns VTREE$ROOT and VTREE. Operation logs
+(SYS$LOGIN:VTREE.LOG) are users' own files and are kept.

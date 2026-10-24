@@ -66,7 +66,7 @@ class Screen:
 
     def colour_code(self):
         bold = 'B' in self.sgr
-        key = (self.fg, self.bg)
+        key = (self.bg, self.fg) if 'R' in self.sgr else (self.fg, self.bg)   # reverse swaps
         if key == (7, 4): return 'w' if bold else '.'
         if key == (3, 4): return 'y'
         if key == (6, 4): return 'C' if bold else 'c'

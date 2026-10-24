@@ -1,0 +1,76 @@
+VTREE @VERSION@ for OpenVMS (vms-vtree, @ARCH@) - EARLY TEST RELEASE
+====================================================================
+
+VTREE is a full-screen file and directory manager for OpenVMS, inspired by
+XTree Gold and dressed as a DEC application: a directory tree above a file
+window, one-letter commands, tagging, VT line drawing, the LK201 editing keys,
+and PF1 as the GOLD key for a second set of commands. The screen uses XTree
+Gold's colours (blue, white, yellow, cyan).
+
+Starting it
+-----------
+    $ VTREE :== $VTREE:VTREE.EXE     ! once, or in LOGIN.COM / SYLOGIN.COM
+    $ VTREE                          ! in your default directory
+    $ VTREE SYS$SYSROOT:[SYSHLP]     ! anywhere else
+    $ VTREE/PRIVILEGES               ! system managers: see Safety below
+
+It needs a VT100-compatible terminal of at least 24 x 80; it uses the whole
+terminal (132 columns too). On a terminal without colour (a real VT220/VT320):
+    $ DEFINE VTREE$DISPLAY MONO
+Help (or PF2, or ?) shows the keys of the window you are in. F10 or Ctrl/Z
+leaves.
+
+What it does
+------------
+Tree:   open (+, Right), close (-), open a whole branch (*), Log another disk
+        or directory (L), the mounted disks (A), Branch and Showall file
+        lists (B, S), make (M), rename (R), delete an empty directory (D),
+        purge (P), prune a branch (GOLD P), graft a branch elsewhere on the
+        disk (GOLD G), attributes of the directory file (GOLD A).
+Files:  view (V: text by records, H for hex), Info (I), tag (T, U, Select;
+        GOLD T/U all), filespec (F, e.g. *.COM;*), versions (;), sort (GOLD S),
+        copy (C), move (M), rename (R), delete (D or Remove), purge (P),
+        attributes (A: protection, owner, ACL, expiration date, /NOBACKUP,
+        erase on delete), search the files' text (S), compare two (GOLD V,
+        with DIFFERENCES), print (O), edit (E, VTREE$EDITOR or EDIT/TPU), DCL
+        subprocess (X). With GOLD, C M R D A O work on every tagged file.
+
+Safety
+------
+- VTREE switches off BYPASS, SYSPRV, READALL and GRPPRV while it runs, so it
+  can only see and do what file protection allows you. VTREE/PRIVILEGES keeps
+  them on for the session; the title line then says PRIVILEGED (in red).
+- Copy behaves as COPY does and never overwrites: the copy is a new version.
+  A copy or move that would make RMS delete old versions (a version limit) is
+  refused.
+- A delete shows what will go and asks; the answer defaults to No, and keys
+  typed ahead never answer a question. A prune also wants the directory's
+  name typed back, and is refused if anything in the branch is an alias
+  (such as SYSCOMMON on a system disk) or can't be read.
+- Every change is logged in SYS$LOGIN:VTREE.LOG (or the file VTREE$LOG names).
+- Files reach DCL commands (edit, compare, print) as logical names, never
+  inside a command line.
+
+Setting it up
+-------------
+PRODUCT INSTALL has defined VTREE$ROOT and VTREE once. To define them at every
+boot, add to SYS$MANAGER:SYSTARTUP_VMS.COM:
+    $ @SYS$STARTUP:VTREE$STARTUP.COM
+and give users the foreign command (SYLOGIN.COM or their LOGIN.COM):
+    $ VTREE :== $VTREE:VTREE.EXE
+
+Logical names
+-------------
+VTREE$DISPLAY  MONO for bold/reverse instead of colour
+VTREE$EDITOR   the editor command for E (default EDIT/TPU)
+VTREE$LOG      the operation log (default SYS$LOGIN:VTREE.LOG; NL: for none)
+
+Limits of this release
+----------------------
+- The screen size is read at start-up; resize before starting VTREE.
+- No version-limit editing, and ACL entries are deleted and added rather than
+  edited in place.
+- Directories are read as you open them; GOLD L reads a whole disk.
+
+VTREE is unrelated to XTree, whose name is its owners' trademark.
+MIT licence: see LICENSE. Source: https://github.com/issinoho/vms-vtree

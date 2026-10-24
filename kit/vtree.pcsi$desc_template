@@ -1,0 +1,25 @@
+--
+-- PCSI product description for VTREE (vms-vtree) on OpenVMS.
+-- Template: tools/kit.sh substitutes @PRODUCER@, @BASE@ and @PCSIVERSION@.
+--
+product @PRODUCER@ @BASE@ VTREE @PCSIVERSION@ full ;
+
+    -- VTREE.EXE needs only the C RTL, SMG$ and system services: no other product.
+
+    information RELEASE_NOTES phase after ;
+
+    directory [VTREE] ;
+
+    file [VTREE]VTREE.EXE ;
+    file [VTREE]README.VMS ;
+    file [VTREE]LICENSE. ;
+    file [SYS$STARTUP]VTREE$STARTUP.COM ;
+
+    -- Define VTREE$ROOT and VTREE now. VTREE installs no privileged image and changes
+    -- no login or startup procedure: those are post-installation tasks.
+    execute postinstall "@PCSI$DESTINATION:[SYS$STARTUP]VTREE$STARTUP.COM INSTALL" interactive ;
+    execute install "CONTINUE" remove "@PCSI$DESTINATION:[SYS$STARTUP]VTREE$STARTUP.COM REMOVE" ;
+
+    information POST_INSTALL phase after ;
+
+end product ;

@@ -18,6 +18,11 @@ int main(int argc, char **argv)
     const char *spec = 0;
     char msg[256];
 
+    /* -v: the version, without touching the terminal (MAKE_KIT.COM checks it) */
+    if (argc == 2 && (!strcmp(argv[1], "-v") || !vt_strcasecmp(argv[1], "/VERSION"))) {
+        printf("vtree %s\n", VT_VERSION);
+        return SS$_NORMAL;
+    }
     for (i = 1; i < argc; i++) {           /* the C RTL lowercases them: compare blind */
         if (argv[i][0] == '/') {
             if (vt_strncasecmp(argv[i], "/PRIVILEGES", strlen(argv[i])) == 0 && strlen(argv[i]) >= 5)

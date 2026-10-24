@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 792 480" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="16">
+<rect width="792" height="480" rx="8" fill="#0000aa"/>
+<rect x="88.8" y="145" width="10.0" height="19" fill="#00aaaa"/>
+<rect x="98.4" y="145" width="10.0" height="19" fill="#00aaaa"/>
+<rect x="108.0" y="145" width="10.0" height="19" fill="#00aaaa"/>
+<rect x="117.6" y="145" width="10.0" height="19" fill="#00aaaa"/>
+<text x="21.6" y="27" fill="#ffff55" xml:space="preserve" textLength="48.0" lengthAdjust="spacingAndGlyphs">VTREE</text>
+<text x="69.6" y="27" fill="#ffffff" xml:space="preserve" textLength="710.4" lengthAdjust="spacingAndGlyphs">   X86VMS$DKA300:[IAIN.VMS_VTREE.LIVE]                  24-OCT-2026 17:55 </text>
+<text x="12.0" y="46" fill="#00aaaa" xml:space="preserve" textLength="768.0" lengthAdjust="spacingAndGlyphs">┌─────────────────────────────────────────────────────────┬────────────────────┐</text>
+<text x="12.0" y="65" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="50.4" y="65" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="69.6" y="65" fill="#c0c0c0" xml:space="preserve" textLength="499.2" lengthAdjust="spacingAndGlyphs">vms_steward                                         </text>
+<text x="568.8" y="65" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="588.0" y="65" fill="#ffff55" xml:space="preserve" textLength="38.4" lengthAdjust="spacingAndGlyphs">FILE</text>
+<text x="770.4" y="65" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="84" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="50.4" y="84" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="69.6" y="84" fill="#c0c0c0" xml:space="preserve" textLength="499.2" lengthAdjust="spacingAndGlyphs">VMS_VLMF                                            </text>
+<text x="568.8" y="84" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="84" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  *.*;*             </text>
+<text x="770.4" y="84" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="103" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="50.4" y="103" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">└─</text>
+<text x="69.6" y="103" fill="#c0c0c0" xml:space="preserve" textLength="499.2" lengthAdjust="spacingAndGlyphs">VMS_VTREE                                           </text>
+<text x="568.8" y="103" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="588.0" y="103" fill="#ffff55" xml:space="preserve" textLength="38.4" lengthAdjust="spacingAndGlyphs">DISK</text>
+<text x="770.4" y="103" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="122" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="122" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="88.8" y="122" fill="#c0c0c0" xml:space="preserve" textLength="480.0" lengthAdjust="spacingAndGlyphs">BUILD                                             </text>
+<text x="568.8" y="122" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="122" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  X86VMS$DKA300:    </text>
+<text x="770.4" y="122" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="141" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="141" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="88.8" y="141" fill="#c0c0c0" xml:space="preserve" textLength="480.0" lengthAdjust="spacingAndGlyphs">COPYTEST                                          </text>
+<text x="568.8" y="141" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="141" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  SYSDUMP           </text>
+<text x="770.4" y="141" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="160" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="160" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="88.8" y="160" fill="#000000" xml:space="preserve" textLength="38.4" lengthAdjust="spacingAndGlyphs">LIVE</text>
+<text x="568.8" y="160" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="160" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Free    7,788,425 </text>
+<text x="770.4" y="160" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="179" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="179" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="88.8" y="179" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="108.0" y="179" fill="#c0c0c0" xml:space="preserve" textLength="460.8" lengthAdjust="spacingAndGlyphs">ALPHA                                           </text>
+<text x="568.8" y="179" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="588.0" y="179" fill="#ffff55" xml:space="preserve" textLength="86.4" lengthAdjust="spacingAndGlyphs">DIRECTORY</text>
+<text x="770.4" y="179" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="198" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="198" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="88.8" y="198" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="108.0" y="198" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">└─</text>
+<text x="127.2" y="198" fill="#c0c0c0" xml:space="preserve" textLength="441.6" lengthAdjust="spacingAndGlyphs">BETA                                          </text>
+<text x="568.8" y="198" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="198" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Files           4 </text>
+<text x="770.4" y="198" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="217" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="217" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="88.8" y="217" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="108.0" y="217" fill="#c0c0c0" xml:space="preserve" textLength="460.8" lengthAdjust="spacingAndGlyphs">GAMMA                                           </text>
+<text x="568.8" y="217" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="217" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Blocks        923 </text>
+<text x="770.4" y="217" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="236" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="236" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="88.8" y="236" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">└─</text>
+<text x="108.0" y="236" fill="#c0c0c0" xml:space="preserve" textLength="460.8" lengthAdjust="spacingAndGlyphs">LOCKED ?                                        </text>
+<text x="568.8" y="236" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="588.0" y="236" fill="#ffff55" xml:space="preserve" textLength="76.8" lengthAdjust="spacingAndGlyphs">MATCHING</text>
+<text x="770.4" y="236" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="255" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="255" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="88.8" y="255" fill="#c0c0c0" xml:space="preserve" textLength="480.0" lengthAdjust="spacingAndGlyphs">probes                                            </text>
+<text x="568.8" y="255" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="255" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Files           4 </text>
+<text x="770.4" y="255" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="274" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="69.6" y="274" fill="#00aaaa" xml:space="preserve" textLength="19.2" lengthAdjust="spacingAndGlyphs">├─</text>
+<text x="88.8" y="274" fill="#c0c0c0" xml:space="preserve" textLength="480.0" lengthAdjust="spacingAndGlyphs">src                                               </text>
+<text x="568.8" y="274" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="274" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Blocks        923 </text>
+<text x="770.4" y="274" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="293" fill="#00aaaa" xml:space="preserve" textLength="566.4" lengthAdjust="spacingAndGlyphs">├─────────────────────────────────────────────────────────┤</text>
+<text x="588.0" y="293" fill="#ffff55" xml:space="preserve" textLength="57.6" lengthAdjust="spacingAndGlyphs">TAGGED</text>
+<text x="770.4" y="293" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="312" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="21.6" y="312" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">◆</text>
+<text x="31.2" y="312" fill="#c0c0c0" xml:space="preserve" textLength="124.8" lengthAdjust="spacingAndGlyphs">BIN.DAT;1    </text>
+<text x="156.0" y="312" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">◆</text>
+<text x="165.6" y="312" fill="#c0c0c0" xml:space="preserve" textLength="403.2" lengthAdjust="spacingAndGlyphs">DATA.IDX;1    NOTES.TXT;2   NOTES.TXT;1   </text>
+<text x="568.8" y="312" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="312" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Files           2 </text>
+<text x="770.4" y="312" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="331" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="568.8" y="331" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="331" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Blocks        915 </text>
+<text x="770.4" y="331" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="350" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="568.8" y="350" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="770.4" y="350" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="369" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="568.8" y="369" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="369" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs"> IAIN [200,101]     </text>
+<text x="770.4" y="369" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="388" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="568.8" y="388" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="578.4" y="388" fill="#c0c0c0" xml:space="preserve" textLength="192.0" lengthAdjust="spacingAndGlyphs">  Privs off         </text>
+<text x="770.4" y="388" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="407" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="568.8" y="407" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="770.4" y="407" fill="#00aaaa" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">│</text>
+<text x="12.0" y="426" fill="#00aaaa" xml:space="preserve" textLength="768.0" lengthAdjust="spacingAndGlyphs">└─────────────────────────────────────────────────────────┴────────────────────┘</text>
+<text x="21.6" y="445" fill="#55ffff" xml:space="preserve" textLength="28.8" lengthAdjust="spacingAndGlyphs">DIR</text>
+<text x="69.6" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">B</text>
+<text x="79.2" y="445" fill="#c0c0c0" xml:space="preserve" textLength="57.6" lengthAdjust="spacingAndGlyphs">ranch </text>
+<text x="136.8" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">D</text>
+<text x="146.4" y="445" fill="#c0c0c0" xml:space="preserve" textLength="57.6" lengthAdjust="spacingAndGlyphs">elete </text>
+<text x="204.0" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">F</text>
+<text x="213.6" y="445" fill="#c0c0c0" xml:space="preserve" textLength="76.8" lengthAdjust="spacingAndGlyphs">ilespec </text>
+<text x="290.4" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">I</text>
+<text x="300.0" y="445" fill="#c0c0c0" xml:space="preserve" textLength="38.4" lengthAdjust="spacingAndGlyphs">nfo </text>
+<text x="338.4" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">L</text>
+<text x="348.0" y="445" fill="#c0c0c0" xml:space="preserve" textLength="28.8" lengthAdjust="spacingAndGlyphs">og </text>
+<text x="376.8" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">M</text>
+<text x="386.4" y="445" fill="#c0c0c0" xml:space="preserve" textLength="67.2" lengthAdjust="spacingAndGlyphs">akedir </text>
+<text x="453.6" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">P</text>
+<text x="463.2" y="445" fill="#c0c0c0" xml:space="preserve" textLength="48.0" lengthAdjust="spacingAndGlyphs">urge </text>
+<text x="511.2" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">R</text>
+<text x="520.8" y="445" fill="#c0c0c0" xml:space="preserve" textLength="57.6" lengthAdjust="spacingAndGlyphs">ename </text>
+<text x="578.4" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">S</text>
+<text x="588.0" y="445" fill="#c0c0c0" xml:space="preserve" textLength="67.2" lengthAdjust="spacingAndGlyphs">howall </text>
+<text x="655.2" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">T</text>
+<text x="664.8" y="445" fill="#c0c0c0" xml:space="preserve" textLength="28.8" lengthAdjust="spacingAndGlyphs">ag </text>
+<text x="693.6" y="445" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">U</text>
+<text x="703.2" y="445" fill="#c0c0c0" xml:space="preserve" textLength="76.8" lengthAdjust="spacingAndGlyphs">ntag    </text>
+<text x="21.6" y="464" fill="#55ffff" xml:space="preserve" textLength="76.8" lengthAdjust="spacingAndGlyphs">COMMANDS</text>
+<text x="98.4" y="464" fill="#c0c0c0" xml:space="preserve" textLength="249.6" lengthAdjust="spacingAndGlyphs">  PF1 GOLD  Return files  </text>
+<text x="348.0" y="464" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">A</text>
+<text x="357.6" y="464" fill="#c0c0c0" xml:space="preserve" textLength="67.2" lengthAdjust="spacingAndGlyphs">vail  e</text>
+<text x="424.8" y="464" fill="#ffff55" xml:space="preserve" textLength="9.6" lengthAdjust="spacingAndGlyphs">X</text>
+<text x="434.4" y="464" fill="#c0c0c0" xml:space="preserve" textLength="345.6" lengthAdjust="spacingAndGlyphs">ecute  + - *  Help  F10 exit        </text>
+</svg>
