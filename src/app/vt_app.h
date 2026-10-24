@@ -48,6 +48,7 @@ typedef struct {
     /* tree window */
     int *vis; int nvis, capvis;
     int tcur, ttop;           /* index into vis */
+    int tjump;                /* the cursor jumped: place it a third of the way down */
 
     /* file window */
     vt_filter filter;

@@ -1,0 +1,13 @@
+# PTYDRIVE script: a large system directory, then a whole-disk read stopped by a key.
+2 dcl | set terminal/width=80/page=24\r
+8 start in syslib | vtree sys$common:[syslib]\r
+3 files | \r
+3 last file | \eOP\e[B
+2 back | \r
+6 log whole disk | \eOPl
+1 stop it | x
+3 after stop | \x20
+3 showall | s
+3 showall back | \e[21~
+2 quit | \e[21~
+2 dcl after | show default\r

@@ -9,9 +9,9 @@
 │ │ ├─IAIN                                                │ DIRECTORY          │
 │ │ │ ├─COM                                               │  Files           0 │
 │ │ │ └─VMS_VTREE                                         │  Blocks          0 │
-│ │ └─SYSTEM ?                                            │ MATCHING           │
-│ └─VMS$COMMON                                            │  Files           0 │
-│   ├─SYSEXE                                              │  Blocks          0 │
+│ │ ├─ODD (unchecked)                                     │ MATCHING           │
+│ │ └─SYSTEM ?                                            │  Files           0 │
+│ └─VMS$COMMON                                            │  Blocks          0 │
 ├─────────────────────────────────────────────────────────┤ TAGGED             │
 │ No files                                                │  Files           2 │
 │                                                         │  Blocks          5 │

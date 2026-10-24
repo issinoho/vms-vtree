@@ -79,6 +79,13 @@ deletes another tree. VTREE recognises an alias (a directory file ID already see
 back-link that is not the directory it was found in, N5) and shows it as such but never
 descends into it for a recursive count, copy or delete.
 
+Amended 2026-10-24 (N8): an entry whose back-link can't be read (its header is
+protected, or its parent can't be listed and the path came from a typed name) is
+"(unchecked)" and treated as an alias. Each node records only its own entry; a
+recursive command never passes such an entry on its way down from where it started,
+but may start inside one. Showall covers what is reachable that way from the highest
+ancestor of the cursor.
+
 ## D9. Every version is shown, like DIRECTORY (2026-10-24, confirmed by the user)
 
 The file window lists all versions (`*.*;*`) by default, as DIRECTORY does. A key

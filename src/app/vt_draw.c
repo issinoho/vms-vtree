@@ -70,6 +70,9 @@ static void draw_tree(vt_app *a, int r1, int r2, int c1, int c2)
 {
     vt_screen *s = &a->scr;
     int rows = r2 - r1 + 1, i;
+    if (a->tjump && (a->tcur < a->ttop || a->tcur >= a->ttop + rows - 2)) a->ttop = a->tcur - rows / 3;
+    a->tjump = 0;
+    if (a->ttop > a->nvis - rows) a->ttop = a->nvis - rows;
     if (a->tcur < a->ttop) a->ttop = a->tcur;
     if (a->tcur >= a->ttop + rows) a->ttop = a->tcur - rows + 1;
     if (a->ttop < 0) a->ttop = 0;
@@ -92,8 +95,8 @@ static void draw_tree(vt_app *a, int r1, int r2, int c1, int c2)
             if (col + 1 <= c2) vt_gfx(s, row, col + 1, VT_G_HLINE, 0);
         }
         col = c1 + 2 * d;
-        if (nd->flags & VT_N_ALIAS && (d == 0 || !(a->t.n[nd->parent].flags & VT_N_ALIAS)))
-            strcpy(suffix, " (alias)");
+        if (nd->flags & VT_N_ALIAS) strcpy(suffix, " (alias)");
+        else if (nd->flags & VT_N_NOLINK) strcpy(suffix, (nd->flags & VT_N_ERROR) ? " (unchecked) ?" : " (unchecked)");
         else if (nd->flags & VT_N_ERROR) strcpy(suffix, " ?");
         else if ((nd->flags & VT_N_SCANNED) && nd->child >= 0 && !(nd->flags & VT_N_OPEN))
             strcpy(suffix, " +");
@@ -137,7 +140,11 @@ static void draw_files(vt_app *a, int r1, int r2, int c1, int c2, int active)
         if (n > maxlen) maxlen = n;
     }
     if (a->fmt == 0 || !active) {
+        /* One long name must not leave a single column: cap the width; a cut
+           name ends in '>' and the title line shows it whole. */
+        int cap = width / 3 > 22 ? width / 3 : 22;
         cw = maxlen + 3;
+        if (cw > cap) cw = cap;
         if (cw > width) cw = width;
         cols = width / cw;
         if (cols < 1) cols = 1;
@@ -157,6 +164,7 @@ static void draw_files(vt_app *a, int r1, int r2, int c1, int c2, int active)
         n = ref_label(a, &a->refs[idx], buf, sizeof buf);
         if (cols > 1 || !active || a->fmt == 0) {
             vt_put(s, row, col + 1, buf, at, cw - 2);
+            if (n > cw - 2) vt_put(s, row, col + cw - 2, ">", (unsigned char) (at | VT_A_BOLD), 1);
             if (at && n < cw - 2) vt_attr_run(s, row, col + 1 + n, 0, at);
         } else {
             /* one line: name, blocks used/allocated, revised, protection */

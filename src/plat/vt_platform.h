@@ -67,6 +67,7 @@ typedef struct {
     unsigned short fid[3];
     int is_dir;               /* directory bit set (always read for .DIR entries) */
     int is_alias;             /* directory entry whose back-link is not here (N5) */
+    int link_unknown;         /* a directory whose back-link could not be read */
     int is_self;              /* the directory's own entry ([000000]000000.DIR) */
     vt_attrs a;               /* a.status = 0 when attrs were not asked for */
 } vtp_entry;

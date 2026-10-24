@@ -7,9 +7,9 @@
 │ │ ├─IAIN                                                                                                    │  VMSSYS            │
 │ │ │ ├─COM                                                                                                   │  Free    1,234,567 │
 │ │ │ └─VMS_VTREE                                                                                             │ DIRECTORY          │
-│ │ └─SYSTEM                                                                                                  │  Files           2 │
-│ └─VMS$COMMON                                                                                                │  Blocks          9 │
-│                                                                                                             │ MATCHING           │
+│ │ ├─ODD (unchecked)                                                                                         │  Files           2 │
+│ │ └─SYSTEM                                                                                                  │  Blocks          9 │
+│ └─VMS$COMMON                                                                                                │ MATCHING           │
 │                                                                                                             │  Files           2 │
 │                                                                                                             │  Blocks          9 │
 │                                                                                                             │ TAGGED             │

@@ -1,0 +1,35 @@
+# PTYDRIVE script for test_live.com. "<secs> <label> | <keys>".
+2 dcl | set terminal/width=80/page=24\r
+5 start | vtree [.live]\r
+2 files | \r
+2 long format | =
+2 down to data.idx | \e[B
+3 view indexed | v
+2 back | \e[21~
+2 down to notes;2 | \e[B
+3 info | i
+2 info back | \x20
+3 view notes | v
+3 find line 40 | \e[1~line 40\r
+2 next screen | \e[6~
+2 hex | h
+2 back from view | \e[21~
+2 up to bin | \e[A\e[A\e[A
+3 view bin (hex) | v
+2 back again | \e[21~
+2 tag two | tt
+2 to tree | \r
+3 open branch | *
+3 down to locked | \e[B\e[B\e[B\e[B
+3 info on locked | i
+2 locked info back | \x20
+3 avail | a
+2 avail back | \e[21~
+3 help | \e[28~
+2 help back | \x20
+2 gold top | \eOP\e[A
+3 info on root | i
+2 root info back | \x20
+2 quit ask | q
+4 quit yes | y
+2 dcl after | show default\r

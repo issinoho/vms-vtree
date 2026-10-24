@@ -1,4 +1,4 @@
- VTREE   DKA0:[USERS.IAIN]LOGIN.COM;12   Hex  byte 0 of 73    24-OCT-2026 15:02
+ VTREE   DKA0:[USERS.IAIN]LOGIN.COM;12    Hex  byte 0 of 73   24-OCT-2026 15:02
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 00000000  24 20 73 65 74 20 6E 6F  6F 6E 0A 24 20 64 65 66  $ set noon.$ def │
 │ 00000010  69 6E 65 2F 6E 6F 6C 6F  67 20 76 74 72 65 65 24  ine/nolog vtree$ │

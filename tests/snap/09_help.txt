@@ -10,7 +10,7 @@
 │   T  U  Select          tag / untag the files of this directory              │
 │   GOLD T  GOLD U        tag / untag the files of the whole branch            │
 │   B                     Branch: the files of this directory and below        │
-│   S                     Showall: the files of every directory read so far    │
+│   S                     Showall: every directory read so far on this disk    │
 │   GOLD L                Log the whole disk (read every directory)            │
 │   L                     Log another disk or directory                        │
 │   A                     Avail: the mounted disks                             │

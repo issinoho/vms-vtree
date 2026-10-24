@@ -33,8 +33,10 @@ typedef struct {
 #define VT_N_ROOT    1
 #define VT_N_SCANNED 2      /* subdirectories read */
 #define VT_N_OPEN    4      /* children shown */
-#define VT_N_ALIAS   8      /* reached through an alias entry: never recursed into */
+#define VT_N_ALIAS   8      /* its directory entry is an alias (D8) */
 #define VT_N_ERROR  16      /* reading it failed: see scan_status */
+#define VT_N_NOLINK 32      /* its back-link could not be read: treated as an alias */
+#define VT_N_CLOSED (VT_N_ALIAS | VT_N_NOLINK)   /* a recursive command never passes it */
 
 typedef struct {
     char *name;             /* directory name, or the device ("DKA0:") for a root */
@@ -56,7 +58,8 @@ void vt_tree_init(vt_tree *t);
 void vt_tree_free(vt_tree *t);
 /* Add (or find) the root for a device. Returns its index, -1 on no memory. */
 int  vt_tree_root(vt_tree *t, const char *device);
-/* Add (or find, case-blind) a child; children are kept in name order. */
+/* Add (or find, case-blind) a child; children are kept in name order.
+   alias: 0 a plain directory, 1 an alias (D8), 2 back-link unknown. */
 int  vt_tree_child(vt_tree *t, int parent, const char *name, const unsigned short fid[3],
                    int alias);
 int  vt_tree_find_child(const vt_tree *t, int parent, const char *name);
@@ -69,6 +72,11 @@ int  vt_tree_visible(const vt_tree *t, int *out, int max);
 int  vt_tree_is_last(const vt_tree *t, int node);
 /* Is a an ancestor of (or equal to) b? */
 int  vt_tree_within(const vt_tree *t, int a, int b);
+/* Is b within a, with no alias or unchecked entry on the way down (a itself may be
+   one)? This is what a recursive command started at a may touch (D8). */
+int  vt_tree_reaches(const vt_tree *t, int a, int b);
+/* The highest node from which node is reachable in that sense. */
+int  vt_tree_reach_top(const vt_tree *t, int node);
 
 /* File lists */
 int  vt_flist_add(vt_flist *fl, const char *name, const char *type, unsigned int ver,

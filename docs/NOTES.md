@@ -88,3 +88,13 @@ must be compared without regard to case.
 `F$PRIVILEGE("SYSPRV")` TRUE again. Image rundown resets the current privileges from
 the process's, so D5's "restore on every exit path" holds even for an abnormal exit,
 with no exit handler needed for it.
+
+## N8. With privileges off, some directory headers can't be read (2026-10-24, IA64)
+
+On Myi64, `[000000]VMS$COMMON.DIR` is `(RWE,RWE,RE,E)`: the world may pass through it
+but not read it. With VTREE's privileges off (D5), `IO$_ACCESS` on its alias
+`[SYS0]SYSCOMMON.DIR` fails, so its back-link (N5) can't be checked, and listing
+`[SYS0.SYSCOMMON]` fails with `%RMS-E-PRV`; `SYS$COMMON:[SYSLIB]` is still reachable
+by name. On x86 the MFD itself can't be listed without privileges, so the path to
+the user's directory is made from the names in the start specification.
+VTREE marks such entries "(unchecked)" and treats them as aliases (D8).

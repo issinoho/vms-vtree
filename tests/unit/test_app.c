@@ -25,6 +25,9 @@ static void world(void)
     stub_dir("DKA0:", "[VMS$COMMON.SYSLIB]");
     stub_alias("DKA0:", "[SYS0]", "SYSCOMMON", "[VMS$COMMON]");
     stub_dir_denied("DKA0:", "[USERS.SYSTEM]");
+    stub_dir("DKA0:", "[USERS.ODD.INNER]");
+    stub_nolink("DKA0:", "[USERS]", "ODD");
+    stub_file("DKA0:", "[USERS.ODD.INNER]", "BEHIND.TXT;1", 1, 0, 0);
     stub_default("DKA0:", "[USERS.IAIN]");
     stub_file("DKA0:", "[USERS.IAIN]", "LOGIN.COM;12", 2, vt_make_time(2026, 10, 23, 8, 15, 0),
               "$ set noon\n$ define/nolog vtree$test yes\n$ ! a comment with a\ttab\n$ exit\n");
@@ -134,6 +137,12 @@ int main(int argc, char **argv)
             if (!strcmp(vt_ref_file(&a, &a.refs[i])->name, "DCL")) saw_dcl++;
         CHECK(saw_dcl == 1);           /* once, from VMS$COMMON, not again via SYSCOMMON */
     }
+    {
+        int i, behind = 0;
+        for (i = 0; i < nrefs(&a); i++)
+            if (!strcmp(vt_ref_file(&a, &a.refs[i])->name, "BEHIND")) behind++;
+        CHECK(behind == 0);            /* not through the unchecked ODD */
+    }
     { int k[] = { VK_F10, VK_NONE }; keys(&a, k); }
 
     /* 6. Opening the alias by hand works, and is marked. */
@@ -142,6 +151,21 @@ int main(int argc, char **argv)
         for (i = 0; i < a.t.count; i++) if (!strcmp(a.t.n[i].name, "SYSCOMMON")) node = i;
         CHECK(node >= 0 && (a.t.n[node].flags & VT_N_ALIAS));
         CHECK(!(a.t.n[node].flags & VT_N_SCANNED));
+    }
+
+    /* 6b. A branch started at the unchecked directory itself does go in. */
+    {
+        int i, odd = -1, behind = 0;
+        for (i = 0; i < a.t.count; i++) if (!strcmp(a.t.n[i].name, "ODD")) odd = i;
+        CHECK(odd >= 0 && (a.t.n[odd].flags & VT_N_NOLINK));
+        { int k[] = { VK_PF1, VK_UP, VK_NONE }; keys(&a, k); }
+        while (vt_cur_node(&a) != odd && a.tcur < a.nvis - 1) { int k[] = { VK_DOWN, VK_NONE }; keys(&a, k); }
+        CHECK(vt_cur_node(&a) == odd);
+        { int k[] = { 'B', VK_NONE }; keys(&a, k); }
+        for (i = 0; i < nrefs(&a); i++)
+            if (!strcmp(vt_ref_file(&a, &a.refs[i])->name, "BEHIND")) behind++;
+        CHECK(behind == 1);
+        { int k[] = { VK_F10, VK_NONE }; keys(&a, k); }
     }
 
     /* 7. Help, Avail and logging another disk. */

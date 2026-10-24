@@ -79,7 +79,8 @@ int vt_tree_child(vt_tree *t, int parent, const char *name, const unsigned short
     t->n[c].parent = parent;
     t->n[c].depth = t->n[parent].depth + 1;
     if (fid) memcpy(t->n[c].fid, fid, sizeof t->n[c].fid);
-    if (alias || (t->n[parent].flags & VT_N_ALIAS)) t->n[c].flags |= VT_N_ALIAS;
+    if (alias == 1) t->n[c].flags |= VT_N_ALIAS;
+    else if (alias == 2) t->n[c].flags |= VT_N_NOLINK;
     for (i = t->n[parent].child; i >= 0 && vt_strcasecmp(t->n[i].name, name) < 0;
          i = t->n[i].next)
         prev = i;
@@ -126,6 +127,22 @@ int vt_tree_within(const vt_tree *t, int a, int b)
 {
     for (; b >= 0; b = t->n[b].parent) if (b == a) return 1;
     return 0;
+}
+
+int vt_tree_reaches(const vt_tree *t, int a, int b)
+{
+    for (; b >= 0; b = t->n[b].parent) {
+        if (b == a) return 1;
+        if (t->n[b].flags & VT_N_CLOSED) return 0;
+    }
+    return 0;
+}
+
+int vt_tree_reach_top(const vt_tree *t, int node)
+{
+    while (node >= 0 && !(t->n[node].flags & VT_N_CLOSED) && t->n[node].parent >= 0)
+        node = t->n[node].parent;
+    return node;
 }
 
 int vt_flist_add(vt_flist *fl, const char *name, const char *type, unsigned int ver,

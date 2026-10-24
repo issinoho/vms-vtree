@@ -204,7 +204,7 @@ void vt_view_fill(vt_app *a, int height, int width)
     vt_viewer *w = &a->view;
     vt_screen *s = &a->scr;
     long h = body_rows(a), i;
-    char title[VT_SPEC_MAX + 64], line[512];
+    char where[64], line[512];
     (void) height; (void) width;
 
     vt_box(s, 1, 0, s->rows - 3, s->cols - 1);
@@ -236,8 +236,7 @@ void vt_view_fill(vt_app *a, int height, int width)
             line[o] = '\0';
             vt_put(s, 2 + (int) i, 2, line, 0, s->cols - 4);
         }
-        snprintf(title, sizeof title, "%s   Hex  byte %lu of %llu", w->path,
-                 (unsigned long) w->top * 16, w->size);
+        snprintf(where, sizeof where, "Hex  byte %lu of %llu", (unsigned long) w->top * 16, w->size);
     } else {
         int len;
         go_line(a, w->top);
@@ -260,12 +259,15 @@ void vt_view_fill(vt_app *a, int height, int width)
             line[o] = '\0';
             vt_put(s, 2 + (int) i, 2, line, 0, s->cols - 4);
         }
-        if (w->at_end)
-            snprintf(title, sizeof title, "%s   Line %ld of %ld", w->path, w->top + 1, w->known);
-        else
-            snprintf(title, sizeof title, "%s   Line %ld", w->path, w->top + 1);
+        if (w->at_end) snprintf(where, sizeof where, "Line %ld of %ld", w->top + 1, w->known);
+        else snprintf(where, sizeof where, "Line %ld", w->top + 1);
     }
-    vt_draw_title(a, title);
+    /* The position stays in view: it goes left of the clock, over the path's end. */
+    vt_draw_title(a, w->path);
+    {
+        int wl = (int) strlen(where), at = s->cols - 17 - 4 - wl;
+        if (at > 10) { vt_fill(s, 0, at - 2, 2, ' ', VT_A_REV); vt_put(s, 0, at, where, VT_A_REV, -1); }
+    }
     if (a->gold)
         vt_draw_bottom(a, "GOLD", "PF3 &Find   Up top   Down bottom", "PF1 cancel GOLD");
     else
@@ -295,7 +297,11 @@ void vt_info_build(vt_app *a, const vt_ref *r)
     vt_text_free(a);
     vt_ref_path(a, r, path, sizeof path);
     kv(a, "File", path);
-    snprintf(b, sizeof b, "(%u,%u,%u)", f->fid[0], f->fid[1], f->fid[2]); kv(a, "File ID", b);
+    /* (number, sequence, volume): the third word's high byte extends the number */
+    snprintf(b, sizeof b, "(%lu,%u,%u)",
+             (unsigned long) f->fid[0] + ((unsigned long) (f->fid[2] >> 8) << 16),
+             f->fid[1], f->fid[2] & 0xFFu);
+    kv(a, "File ID", b);
     if (!(at->status & 1)) {
         vtp_message(at->status, b, sizeof b);
         kv(a, "Attributes", b);
@@ -317,13 +323,23 @@ void vt_info_build(vt_app *a, const vt_ref *r)
     kv(a, "Expires", at->edt ? vt_fmt_time(at->edt, 1, b, sizeof b) : "<None specified>");
     kv(a, "Backup", at->bdt ? vt_fmt_time(at->bdt, 1, b, sizeof b) : "<No backup recorded>");
     kv(a, "Organization", vt_org_name(at->org));
-    if (at->rfm == VT_RFM_FIX || at->rfm == VT_RFM_VAR || at->rfm == VT_RFM_VFC)
-        snprintf(b, sizeof b, "%s, maximum %u bytes", vt_rfm_name(at->rfm), at->mrs);
+    if (at->rfm == VT_RFM_VFC)
+        snprintf(b, sizeof b, "VFC, %u byte header, maximum %u bytes, longest %u bytes",
+                 at->vfc, at->mrs, at->lrl);
+    else if (at->rfm == VT_RFM_FIX)
+        snprintf(b, sizeof b, "%s, %u byte records", vt_rfm_name(at->rfm), at->mrs);
+    else if (at->rfm == VT_RFM_VAR)
+        snprintf(b, sizeof b, "%s, maximum %u bytes, longest %u bytes", vt_rfm_name(at->rfm),
+                 at->mrs, at->lrl);
     else snprintf(b, sizeof b, "%s", vt_rfm_name(at->rfm));
     kv(a, "Record format", b);
     kv(a, "Record attributes", vt_fmt_rat(at->rat, b, sizeof b));
-    if (at->versions) { snprintf(b, sizeof b, "%u", at->versions); kv(a, "Version limit", b); }
-    else kv(a, "Version limit", "None");
+    snprintf(b, sizeof b, "Allocation %u, extend %u", at->alloc_blocks, at->defext);
+    kv(a, "File attributes", b);
+    if (f->flags & VT_F_DIR) {
+        if (at->versions) snprintf(b, sizeof b, "%u", at->versions); else vt_strlcpy(b, "None", sizeof b);
+        kv(a, "Default ver. limit", b);
+    }
     {
         /* FCH$ bits (FH2 file characteristics) */
         static const struct { int bit; const char *name; } ch[] = {
@@ -369,7 +385,7 @@ static const char *const help_tree[] = {
     "  T  U  Select          tag / untag the files of this directory",
     "  GOLD T  GOLD U        tag / untag the files of the whole branch",
     "  B                     Branch: the files of this directory and below",
-    "  S                     Showall: the files of every directory read so far",
+    "  S                     Showall: every directory read so far on this disk",
     "  GOLD L                Log the whole disk (read every directory)",
     "  L                     Log another disk or directory",
     "  A                     Avail: the mounted disks",
@@ -384,6 +400,8 @@ static const char *const help_tree[] = {
     "Directories are read as you open them, so a large disk starts at once.",
     "An entry marked (alias) is another name for a directory elsewhere, such",
     "as SYSCOMMON on a system disk: branch-wide commands never go into it.",
+    "(unchecked): its entry could not be read, so it might be an alias; it is",
+    "treated as one. Open it by hand, or start the command inside it.",
     "A ? after a name: the directory could not be read (I tells you why).",
     "",
     "VTREE switches off BYPASS, SYSPRV, READALL and GRPPRV while it runs, so",

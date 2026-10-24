@@ -48,6 +48,7 @@ void vt_progress(vt_app *a, const char *text)
 
 static void rebuild_vis(vt_app *a)
 {
+    int keep = a->nvis && a->tcur < a->nvis ? a->vis[a->tcur] : -1, i;
     int n = vt_tree_visible(&a->t, a->vis, a->capvis);
     if (n > a->capvis) {
         int cap = n + 256;
@@ -57,6 +58,11 @@ static void rebuild_vis(vt_app *a)
         n = vt_tree_visible(&a->t, a->vis, a->capvis);
     }
     a->nvis = n;
+    /* The same directory stays under the cursor; if it was closed away, its
+       nearest visible ancestor takes its place. */
+    for (; keep >= 0; keep = a->t.n[keep].parent) {
+        for (i = 0; i < a->nvis; i++) if (a->vis[i] == keep) { a->tcur = i; return; }
+    }
     if (a->tcur >= a->nvis) a->tcur = a->nvis ? a->nvis - 1 : 0;
 }
 
@@ -79,6 +85,7 @@ static void set_cursor_node(vt_app *a, int node)
     int i;
     rebuild_vis(a);
     for (i = 0; i < a->nvis; i++) if (a->vis[i] == node) { a->tcur = i; break; }
+    a->tjump = 1;
     show_dir(a, vt_cur_node(a));
 }
 
@@ -88,7 +95,8 @@ static int scan_cb(void *vctx, const vtp_entry *e)
 {
     scan_ctx *c = (scan_ctx *) vctx;
     if (e->is_self || !e->is_dir) return 0;
-    if (vt_tree_child(&c->a->t, c->node, e->name, e->fid, e->is_alias) < 0) return 1;
+    if (vt_tree_child(&c->a->t, c->node, e->name, e->fid,
+                      e->is_alias ? 1 : e->link_unknown ? 2 : 0) < 0) return 1;
     c->count++;
     return 0;
 }
@@ -123,14 +131,14 @@ static int scan_branch(vt_app *a, int start, int open)
     stack[sp++] = start;
     while (sp) {
         int n = stack[--sp], c;
-        if (n != start && (a->t.n[n].flags & VT_N_ALIAS)) continue;
+        if (n != start && (a->t.n[n].flags & VT_N_CLOSED)) continue;
         if (!(a->t.n[n].flags & VT_N_SCANNED)) {
             scan_node(a, n);
             if (++done % 25 == 0) {
                 char m[80];
                 sprintf(m, "Reading directories: %d   (any key stops)", done);
                 vt_progress(a, m);
-                if (vt_check_stop(a)) { ok = 0; break; }
+                if (vt_check_stop(a)) { a->pushback = VK_NONE; ok = 0; break; }
             }
         }
         if (open && a->t.n[n].child >= 0) a->t.n[n].flags |= VT_N_OPEN;
@@ -160,11 +168,11 @@ static int files_cb(void *vctx, const vtp_entry *e)
     unsigned char fl = 0;
     if (e->is_self) return 0;
     if (e->is_dir) fl |= VT_F_DIR;
-    if (e->is_alias) fl |= VT_F_ALIAS;
+    if (e->is_alias || e->link_unknown) fl |= VT_F_ALIAS;
     if (!vt_flist_add(&a->t.n[c->node].files, e->name, e->type, e->ver, e->fid, fl, &e->a))
         return 1;
     if (e->is_dir && e->ver == 1)
-        vt_tree_child(&a->t, c->node, e->name, e->fid, e->is_alias);
+        vt_tree_child(&a->t, c->node, e->name, e->fid, e->is_alias ? 1 : e->link_unknown ? 2 : 0);
     if (++c->count % 500 == 0) {
         char m[80];
         sprintf(m, "Reading files: %d   (any key stops)", c->count);
@@ -176,6 +184,8 @@ static int files_cb(void *vctx, const vtp_entry *e)
 
 /* Read (or reread) a directory's files with their attributes. Tags survive a
    reread for files whose file ID is still there. */
+static int quiet_errors, quiet_failed;
+
 static unsigned int load_files(vt_app *a, int node)
 {
     char dev[VT_SPEC_MAX], dir[VT_SPEC_MAX];
@@ -204,7 +214,12 @@ static unsigned int load_files(vt_app *a, int node)
         for (j = 0; j < fl->n; j++)
             if (memcmp(fl->f[j].fid, tagged[i], 6) == 0) { fl->f[j].flags |= VT_F_TAGGED; break; }
     free(tagged);
+    if (!(st & 1) && !c.stopped) {
+        a->t.n[node].flags |= VT_N_ERROR;
+        a->t.n[node].scan_status = st;
+    }
     if (c.stopped) vt_set_msg(a, 1, "Stopped: %s%s shows only %d files", dev, dir, fl->n);
+    else if (!(st & 1) && quiet_errors) quiet_failed++;
     else if (!(st & 1)) vt_status_msg(a, dir, st);
     a->refs_dirty = 1;
     return st;
@@ -233,12 +248,9 @@ void vt_ref_path(vt_app *a, const vt_ref *r, char *out, int size)
    out except as a plain DIR list). */
 static int list_includes(vt_app *a, int node)
 {
-    int root;
     if (a->kind == L_DIR) return node == a->list_node;
-    if (node != a->list_node && (a->t.n[node].flags & VT_N_ALIAS)) return 0;
-    if (a->kind == L_BRANCH) return vt_tree_within(&a->t, a->list_node, node);
-    for (root = a->list_node; a->t.n[root].parent >= 0; root = a->t.n[root].parent) ;
-    return vt_tree_within(&a->t, root, node);
+    if (a->kind == L_BRANCH) return vt_tree_reaches(&a->t, a->list_node, node);
+    return vt_tree_reaches(&a->t, vt_tree_reach_top(&a->t, a->list_node), node);
 }
 
 static vt_app *sort_app;
@@ -308,6 +320,7 @@ done:
 static int load_list(vt_app *a)
 {
     int node, n = 0;
+    quiet_errors = 1; quiet_failed = 0;
     for (node = 0; node < a->t.count; node++) {
         if (!list_includes(a, node) || a->t.n[node].files.loaded) continue;
         load_files(a, node);
@@ -316,8 +329,17 @@ static int load_list(vt_app *a)
             sprintf(m, "Reading files of directory %d   (any key stops)", n);
             vt_progress(a, m);
         }
-        if (vt_check_stop(a)) { vt_set_msg(a, 1, "Stopped: the list is not complete"); return 0; }
+        if (vt_check_stop(a)) {
+            a->pushback = VK_NONE;
+            vt_set_msg(a, 1, "Stopped: the list is not complete");
+            quiet_errors = 0;
+            return 0;
+        }
     }
+    quiet_errors = 0;
+    if (quiet_failed)
+        vt_set_msg(a, 1, "%d director%s could not be read (marked ? in the tree; I says why)",
+                   quiet_failed, quiet_failed == 1 ? "y" : "ies");
     a->refs_dirty = 1;
     return 1;
 }
@@ -339,7 +361,8 @@ static void log_spec(vt_app *a, const char *spec)
         int c;
         scan_node(a, node);
         c = vt_tree_find_child(&a->t, node, comp[i]);
-        if (c < 0) c = vt_tree_child(&a->t, node, comp[i], 0, 0);   /* listing denied */
+        /* The parent can't be listed, so this entry's back-link is unchecked. */
+        if (c < 0) c = vt_tree_child(&a->t, node, comp[i], 0, 2);
         if (c < 0) break;
         a->t.n[node].flags |= VT_N_OPEN;
         node = c;
@@ -635,6 +658,13 @@ static void dir_info(vt_app *a, int node)
             vt_ref r;
             r.node = parent; r.idx = i;
             vt_info_build(a, &r);
+            if (a->t.n[node].flags & VT_N_ERROR) {      /* why it shows a ? */
+                char m[200], line[240];
+                vtp_message(a->t.n[node].scan_status, m, sizeof m);
+                snprintf(line, sizeof line, "%-18s %s", "Listing it failed", m);
+                vt_text_add(a, "");
+                vt_text_add(a, line);
+            }
             a->back_mode = M_TREE; a->mode = M_INFO;
             return;
         }

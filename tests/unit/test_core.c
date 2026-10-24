@@ -142,8 +142,15 @@ static void test_tree(void)
     {
         int al = vt_tree_child(&t, sys, "SYSCOMMON", fid, 1);
         int below = vt_tree_child(&t, al, "SYSEXE", fid, 0);
+        int unk = vt_tree_child(&t, users, "ODD", fid, 2);
+        int under = vt_tree_child(&t, unk, "X", fid, 0);
         CHECK(t.n[al].flags & VT_N_ALIAS);
-        CHECK(t.n[below].flags & VT_N_ALIAS);    /* everything under an alias is one */
+        CHECK(!vt_tree_reaches(&t, root, below));     /* through the alias: no */
+        CHECK(vt_tree_reaches(&t, al, below));        /* started at the alias: yes */
+        CHECK(!vt_tree_reaches(&t, users, under));    /* through an unchecked entry: no */
+        CHECK(vt_tree_reaches(&t, users, iain));
+        CHECK(vt_tree_reach_top(&t, below) == al);
+        CHECK(vt_tree_reach_top(&t, iain) == root);
     }
     vt_tree_free(&t);
 

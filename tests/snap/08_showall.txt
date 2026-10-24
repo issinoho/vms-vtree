@@ -20,5 +20,5 @@
 │                                                         │  Privs off         │
 │                                                         │                    │
 └─────────────────────────────────────────────────────────┴────────────────────┘
- SHOWALL  Filespec Info Tag Untag View  = format  ; versions
+ 1 directory could not be read (marked ? in the tree; I says why)
  COMMANDS  PF1 GOLD   Return tree   Select tag   Help   F10 tree

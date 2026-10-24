@@ -21,7 +21,10 @@ typedef struct {
     unsigned short prot;          /* S,O,G,W nibbles; a set bit denies R,W,E,D */
     unsigned char rfm, org, rat;  /* record format, organisation, record attributes */
     unsigned short mrs;           /* maximum record size */
-    unsigned short versions;      /* version limit (0 = none) */
+    unsigned short lrl;           /* longest record */
+    unsigned char vfc;            /* VFC header size */
+    unsigned short defext;        /* default extend quantity */
+    unsigned short versions;      /* a directory's default version limit (0 = none) */
     unsigned int uchar;           /* file characteristics (FCH$) */
     unsigned short revisions;
     vt_time cdt, rdt, edt, bdt;   /* created, revised, expires, backed up */

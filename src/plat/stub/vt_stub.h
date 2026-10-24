@@ -21,6 +21,8 @@ void stub_file(const char *dev, const char *dir, const char *name, unsigned int 
                vt_time rdt, const char *content);
 /* An alias entry: [in]name.DIR;1 is another name for target. */
 void stub_alias(const char *dev, const char *in, const char *name, const char *target);
+/* The entry [in]name.DIR;1 can't have its header read (back-link unknown, N8). */
+void stub_nolink(const char *dev, const char *in, const char *name);
 /* The next keys vtp_key will return; VK_NONE ends the list. */
 void stub_keys(const int *keys);
 

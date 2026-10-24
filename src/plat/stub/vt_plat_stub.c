@@ -11,7 +11,7 @@ typedef struct {
     char dev[32], dir[VT_SPEC_MAX], name[VT_NAME_MAX], type[VT_NAME_MAX];
     unsigned int ver;
     unsigned short fid[3];
-    int is_dir, is_alias, denied;
+    int is_dir, is_alias, denied, nolink;
     vt_attrs a;
     char *content;
     size_t len;
@@ -165,6 +165,12 @@ void stub_alias(const char *dev, const char *in, const char *name, const char *t
     vt_strlcpy(al->to, target, sizeof al->to);
 }
 
+void stub_nolink(const char *dev, const char *in, const char *name)
+{
+    sfile *d = find(dev, in, name, ".DIR", 1);
+    if (d) d->nolink = 1;
+}
+
 void stub_keys(const int *k)
 {
     nkeys = kpos = 0;
@@ -280,6 +286,7 @@ unsigned int vtp_list(const char *dev, const char *dir, const char *pattern, int
         memcpy(e.fid, sel[i]->fid, sizeof e.fid);
         e.is_dir = sel[i]->is_dir;
         e.is_alias = sel[i]->is_alias;
+        e.link_unknown = sel[i]->nolink;
         e.is_self = !vt_strcasecmp(real, "[000000]") && !vt_strcasecmp(sel[i]->name, "000000");
         if (attrs) e.a = sel[i]->a;
         if (cb(ctx, &e)) { free(sel); return VTP_STOPPED; }
