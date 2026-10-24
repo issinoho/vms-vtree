@@ -1,0 +1,32 @@
+# PTYDRIVE script for probe_smg: run it, press the keys VTREE will use, then q.
+# VT220 sequences: arrows CSI A-D, PF1-4 SS3 P-S, Find CSI 1~, Insert 2~, Remove 3~,
+# Select 4~, Prev 5~, Next 6~, F10 21~, Help 28~, Do 29~, F17 31~.
+3 run probe | run probe_smg\r
+1 up | \e[A
+1 down | \e[B
+1 right | \e[C
+1 left | \e[D
+1 PF1 gold | \eOP
+1 PF2 | \eOQ
+1 Find | \e[1~
+1 Insert here | \e[2~
+1 Remove | \e[3~
+1 Select | \e[4~
+1 Prev | \e[5~
+1 Next | \e[6~
+1 F10 | \e[21~
+1 Help | \e[28~
+1 Do | \e[29~
+1 F17 | \e[31~
+1 Return | \r
+1 Tab | \x09
+1 Delete | \x7f
+1 Ctrl/W | \x17
+1 letter c | c
+1 letter C | C
+1 asterisk | *
+1 plus | +
+1 KP0 | \eOp
+1 KP-Enter | \eOM
+2 quit | q
+2 show log | type probe_smg.log\r
