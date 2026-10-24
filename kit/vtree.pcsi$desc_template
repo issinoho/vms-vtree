@@ -11,6 +11,7 @@ product @PRODUCER@ @BASE@ VTREE @PCSIVERSION@ full ;
     directory [VTREE] ;
 
     file [VTREE]VTREE.EXE ;
+    file [VTREE]VTREE$SETUP.COM ;
     file [VTREE]README.VMS ;
     file [VTREE]LICENSE. ;
     file [SYS$STARTUP]VTREE$STARTUP.COM ;

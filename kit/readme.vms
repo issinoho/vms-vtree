@@ -9,7 +9,7 @@ Gold's colours (blue, white, yellow, cyan).
 
 Starting it
 -----------
-    $ VTREE :== $VTREE:VTREE.EXE     ! once, or in LOGIN.COM / SYLOGIN.COM
+    $ @VTREE$ROOT:[000000]VTREE$SETUP.COM   ! once, or in LOGIN.COM / SYLOGIN.COM
     $ VTREE                          ! in your default directory
     $ VTREE SYS$SYSROOT:[SYSHLP]     ! anywhere else
     $ VTREE/PRIVILEGES               ! system managers: see Safety below
@@ -56,8 +56,8 @@ Setting it up
 PRODUCT INSTALL has defined VTREE$ROOT and VTREE once. To define them at every
 boot, add to SYS$MANAGER:SYSTARTUP_VMS.COM:
     $ @SYS$STARTUP:VTREE$STARTUP.COM
-and give users the foreign command (SYLOGIN.COM or their LOGIN.COM):
-    $ VTREE :== $VTREE:VTREE.EXE
+and give users the VTREE command (SYLOGIN.COM or their LOGIN.COM):
+    $ @VTREE$ROOT:[000000]VTREE$SETUP.COM
 
 Logical names
 -------------

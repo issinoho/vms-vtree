@@ -12,7 +12,7 @@
     At boot, add to SYS$MANAGER:SYSTARTUP_VMS.COM:
     $ @SYS$STARTUP:VTREE$STARTUP.COM
     For users, in SYS$MANAGER:SYLOGIN.COM or their LOGIN.COM:
-    $ VTREE :== $VTREE:VTREE.EXE
+    $ @VTREE$ROOT:[000000]VTREE$SETUP.COM
 
 PRODUCT REMOVE VTREE deassigns VTREE$ROOT and VTREE. Operation logs
 (SYS$LOGIN:VTREE.LOG) are users' own files and are kept.

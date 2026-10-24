@@ -15,7 +15,7 @@ one-letter commands, tagging, VT line drawing, the LK201 editing keys (Find, Sel
 Remove, Prev/Next Screen, Help, Do), and PF1 as the GOLD key for a second set of
 commands. The screen uses XTree Gold's colours.
 
-**Status: 0.1.0, an early test release.** Written for OpenVMS from scratch in C99; not
+**Status: 0.1.1, an early test release.** Written for OpenVMS from scratch in C99; not
 a port. See [docs/PLAN.md](docs/PLAN.md) for how it was built, phase by phase.
 
 ## What it does
@@ -53,9 +53,9 @@ was seen to do in [docs/NOTES.md](docs/NOTES.md).
 From the [latest release](https://github.com/issinoho/vms-vtree/releases/latest):
 
 ```
-$ SET FILE/ATTRIBUTE=(RFM:FIX,LRL:8192,MRS:8192,RAT:NONE) ISSINOHO-*-VTREE-T0001-0-1.PCSI
+$ SET FILE/ATTRIBUTE=(RFM:FIX,LRL:8192,MRS:8192,RAT:NONE) ISSINOHO-*-VTREE-T0001-1-1.PCSI
 $ PRODUCT INSTALL VTREE /PRODUCER=ISSINOHO /SOURCE=dev:[dir]
-$ VTREE :== $VTREE:VTREE.EXE
+$ @VTREE$ROOT:[000000]VTREE$SETUP.COM
 $ VTREE
 ```
 

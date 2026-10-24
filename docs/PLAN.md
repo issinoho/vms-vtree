@@ -152,7 +152,10 @@ README banner (a real screen, `tools/banner.py`), badges and release notes
 (`out/release-notes.md`) follow the family's format. Installed with the user's
 permission on x86 and IA64 (ISSINOHO VTREE T0.1-0; VTREE$ROOT in SYS$COMMON:[VTREE.]),
 and the installed copy passed `test_live.com live_keys.txt INSTALLED` on both. Not
-done: SYSTARTUP_VMS line, the GitHub repo and release, the family site entry.
+done: the GitHub repo and release, the family site entry. 0.1.1 (2026-10-24) adds
+VTREE$SETUP.COM (defines the VTREE command), as VLMF 0.1.1 did; both nodes upgraded,
+and at the user's request VTREE$STARTUP is in SYSTARTUP_VMS and VTREE$SETUP in
+SYLOGIN on both (vms-site-config); a batch login has the command.
 
 PCSI kits for X86VMS and I64VMS (`tools/kit.sh`, producer ISSINOHO), a `VTREE` DCL
 verb (`SET COMMAND` from the startup procedure, `/PRIVILEGES` and a start directory),

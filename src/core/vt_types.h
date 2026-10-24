@@ -2,8 +2,8 @@
 #ifndef VT_TYPES_H
 #define VT_TYPES_H
 
-#define VT_VERSION "0.1.0"
-#define VT_PCSI_VERSION "T0.1-0"
+#define VT_VERSION "0.1.1"
+#define VT_PCSI_VERSION "T0.1-1"
 
 #define VT_SPEC_MAX 1024     /* a full file specification (RMS allows 4095) */
 #define VT_NAME_MAX 256      /* one name or type field, escapes included */

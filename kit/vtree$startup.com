@@ -10,8 +10,8 @@ $!
 $! P1 = "INSTALL": also print the post-installation tasks (PCSI runs it so).
 $! P1 = "REMOVE":  deassign the logical names instead (PCSI runs it so at removal).
 $!
-$! Users then need a foreign command, in SYS$MANAGER:SYLOGIN.COM or LOGIN.COM:
-$!     $ VTREE :== $VTREE:VTREE.EXE
+$! Users then need the command: in SYS$MANAGER:SYLOGIN.COM or their LOGIN.COM,
+$!     $ @VTREE$ROOT:[000000]VTREE$SETUP.COM
 $!
 $ set noon
 $ mode = f$edit(p1, "UPCASE")
@@ -51,8 +51,8 @@ $ say ""
 $ say "    At system startup: to define VTREE$ROOT and VTREE at every boot, add to"
 $ say "    SYS$MANAGER:SYSTARTUP_VMS.COM:"
 $ say "    $ @SYS$STARTUP:VTREE$STARTUP.COM"
-$ say "    For users: a foreign command, in SYS$MANAGER:SYLOGIN.COM or their LOGIN.COM:"
-$ say "    $ VTREE :== $VTREE:VTREE.EXE"
+$ say "    For users: the VTREE command, in SYS$MANAGER:SYLOGIN.COM or their LOGIN.COM:"
+$ say "    $ @VTREE$ROOT:[000000]VTREE$SETUP.COM"
 $ say ""
 $ say "    VTREE runs with BYPASS, SYSPRV, READALL and GRPPRV switched off, so file"
 $ say "    protection applies; VTREE/PRIVILEGES keeps them on, for system managers."
