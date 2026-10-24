@@ -26,6 +26,7 @@
 #include <gen64def.h>
 #include "vt_platform.h"
 #include "vt_util.h"
+#include "vt_ansi.h"
 
 typedef struct { unsigned short buflen, code; void *buf; unsigned short *retlen; } ile3;
 typedef struct { unsigned short size, type; void *addr; } atr_item;
@@ -51,10 +52,25 @@ static void rtrim(char *s)
 
 /* ---------- session, privileges, terminal ---------- */
 
-static unsigned int pb, kb, disp;
-static int scr_rows, scr_cols, started;
+/* SMG$ owns the keyboard and traps broadcasts; the screen itself is written by
+   vt_ansi through a channel to the terminal, so it can be in colour (D11). */
+static unsigned int pb, kb;
+static unsigned short ttchan;
+static int scr_rows, scr_cols, started, colour = 1;
 static vt_cell *shown;              /* what the terminal shows now */
 static int shown_rows, shown_cols;
+
+static void tt_write(void *ctx, const char *bytes, int len)
+{
+    unsigned short iosb[4];
+    (void) ctx;
+    while (len > 0) {
+        int n = len > 2048 ? 2048 : len;
+        sys$qiow(0, ttchan, IO$_WRITEVBLK | IO$M_NOFORMAT, (void *) iosb, 0, 0,
+                 (void *) bytes, n, 0, 0, 0, 0);
+        bytes += n; len -= n;
+    }
+}
 
 static struct { unsigned int link; void (*handler)(void); unsigned int argc; unsigned int *status;
                 unsigned int st; } exit_block;
@@ -68,8 +84,10 @@ unsigned int vtp_start(vtp_session *s)
     char user[13] = "", node[16] = "";
     unsigned short ul = 0, nl = 0, ql = 0;
     ile3 it[3];
-    unsigned int one = 1, cursor_off = SMG$M_CURSOR_OFF;
+    unsigned int one = 1;
     int rows, cols;
+    struct dsc$descriptor_s ttd;
+    const char *mode;
 
     memset(s, 0, sizeof *s);
     /* D5: protection must apply. Temporary: image rundown restores them (N7). */
@@ -97,17 +115,19 @@ unsigned int vtp_start(vtp_session *s)
     node[nl] = '\0';
     vt_strlcpy(s->node, node, sizeof s->node);
 
-    st = smg$create_pasteboard(&pb, 0, &rows, &cols, 0, 0, 0);
+    dsc(&ttd, "TT:", 3);
+    st = sys$assign(&ttd, &ttchan, 0, 0);
     if (!(st & 1)) return st;
+    st = smg$create_pasteboard(&pb, 0, &rows, &cols, 0, 0, 0);
+    if (!(st & 1)) { sys$dassgn(ttchan); return st; }
     st = smg$create_virtual_keyboard(&kb, 0, 0, 0, 0);
-    if (!(st & 1)) { smg$delete_pasteboard(&pb, &one); return st; }
-    st = smg$create_virtual_display(&rows, &cols, &disp, 0, 0, 0);
-    if (!(st & 1)) { smg$delete_pasteboard(&pb, &one); return st; }
-    smg$paste_virtual_display(&disp, &pb, &one, &one, 0);
+    if (!(st & 1)) { smg$delete_pasteboard(&pb, &one); sys$dassgn(ttchan); return st; }
     smg$set_broadcast_trapping(&pb, 0, 0);       /* messages queue; shown in the menu line */
-    smg$set_cursor_mode(&pb, &cursor_off);
+    mode = getenv("VTREE$DISPLAY");               /* MONO for a terminal without colour */
+    colour = !(mode && (mode[0] == 'M' || mode[0] == 'm'));
     scr_rows = rows; scr_cols = cols;
     started = 1;
+    vt_ansi_begin(colour, tt_write, 0);
 
     exit_block.handler = on_exit;
     exit_block.argc = 1;
@@ -118,13 +138,14 @@ unsigned int vtp_start(vtp_session *s)
 
 void vtp_stop(void)
 {
-    unsigned int one = 1, cursor_on = SMG$M_CURSOR_ON;
+    unsigned int one = 1;
     if (!started) return;
     started = 0;
-    smg$set_cursor_mode(&pb, &cursor_on);
+    vt_ansi_end(tt_write, 0);
     smg$disable_broadcast_trapping(&pb);
     smg$delete_pasteboard(&pb, &one);          /* clears the screen */
     smg$delete_virtual_keyboard(&kb);
+    sys$dassgn(ttchan);
     free(shown); shown = 0;
 }
 
@@ -132,45 +153,19 @@ void vtp_screen_size(int *rows, int *cols) { *rows = scr_rows; *cols = scr_cols;
 
 void vtp_draw(const vt_screen *s)
 {
-    int r, c;
-    unsigned int cm;
     if (!started) return;
     if (!shown || shown_rows != s->rows || shown_cols != s->cols) {
         free(shown);
-        shown = (vt_cell *) calloc((size_t) s->rows * (size_t) s->cols, sizeof *shown);
+        shown = (vt_cell *) malloc((size_t) s->rows * (size_t) s->cols * sizeof *shown);
         shown_rows = s->rows; shown_cols = s->cols;
-        if (shown) for (r = 0; r < s->rows * s->cols; r++) shown[r].ch = 0;   /* all differ */
+        vt_ansi_render(s, 0, colour, tt_write, 0);          /* everything */
+        if (shown) memcpy(shown, s->cell, (size_t) s->rows * (size_t) s->cols * sizeof *shown);
+        return;
     }
-    smg$begin_pasteboard_update(&pb);
-    for (r = 0; r < s->rows; r++) {
-        const vt_cell *row = &s->cell[r * s->cols];
-        if (shown && memcmp(row, &shown[r * s->cols], (size_t) s->cols * sizeof *row) == 0) continue;
-        for (c = 0; c < s->cols; ) {
-            char run[512];
-            int n = 0, row1 = r + 1, col1 = c + 1;
-            unsigned char at = row[c].attr;
-            unsigned int rend = 0, comp = 0, cs;
-            struct dsc$descriptor_s d;
-            while (c < s->cols && row[c].attr == at && n < (int) sizeof run) run[n++] = (char) row[c++].ch;
-            if (at & VT_A_BOLD) rend |= SMG$M_BOLD;
-            if (at & VT_A_REV) rend |= SMG$M_REVERSE;
-            if (at & VT_A_UNDER) rend |= SMG$M_UNDERLINE;
-            cs = (at & VT_A_GFX) ? SMG$C_SPEC_GRAPHICS : SMG$C_ASCII;
-            dsc(&d, run, (unsigned short) n);
-            smg$put_chars(&disp, &d, &row1, &col1, 0, &rend, &comp, &cs);
-        }
-        if (shown) memcpy(&shown[r * s->cols], row, (size_t) s->cols * sizeof *row);
-    }
-    if (s->cursor_on) {
-        int rr = s->cursor_row + 1, cc = s->cursor_col + 1;
-        smg$set_cursor_abs(&disp, &rr, &cc);
-        cm = SMG$M_CURSOR_ON;
-    } else cm = SMG$M_CURSOR_OFF;
-    smg$set_cursor_mode(&pb, &cm);
-    smg$end_pasteboard_update(&pb);
+    vt_ansi_render(s, shown, colour, tt_write, 0);           /* what changed */
 }
 
-void vtp_repaint(void) { if (started) smg$repaint_screen(&pb); }
+void vtp_repaint(void) { free(shown); shown = 0; }          /* next draw sends it all */
 
 int vtp_key(int timeout)
 {

@@ -15,6 +15,9 @@ pasteboards that survive broadcast messages) and is the same on x86 and IA64 (N1
 Considered: VSI C curses (old, weak keypad support) and raw escape sequences (own key
 decoding, most work).
 
+Amended by D11: SMG$ keeps the keyboard and broadcast trapping; the screen is written
+by VTREE itself so that it can be in colour.
+
 ## D3. Code layout: pure core, thin platform (2026-10-24)
 
 As in vms-steward and vms-histsh: C99, VSI C, 32-bit pointers. `src/core/` has no I/O:
@@ -103,3 +106,24 @@ the user chose "all versions".
   the status returned.
 - A failure stops a multi-file operation and asks whether to skip or stop.
 To confirm with the user before Phase 3.
+
+## D11. The XTree Gold colour palette, written as ANSI colour (2026-10-24, user's request)
+
+The user asked for XTree Gold's colours. SMG$ only emits colour through renditions
+defined in a TERMTABLE (`SMG$M_USER1`..`8`), which would mean a site-wide or
+per-user TERMTABLE.EXE just for VTREE. Instead `src/core/vt_ansi.c` turns the screen
+model into VT sequences itself (cursor positioning, SGR, DEC Special Graphics),
+sending only the cells that changed, and `src/plat/vms` writes them to `TT:` with
+`IO$_WRITEVBLK|IO$M_NOFORMAT`. SMG$ keeps what it is good at: the keyboard (LK201
+keys, N1) and broadcast trapping. Being pure, the renderer is unit-tested on Linux.
+
+Each cell carries a role (title, menu, menu label, or "by rendition"), and the palette
+maps roles and renditions to colours: blue screen, white text, bright white title,
+yellow keys, labels and tag diamonds, cyan frames, bright cyan menu labels, a
+black-on-cyan highlight bar (black on white in the window not in use), errors white
+on red. The values are from memory of XTree Gold's defaults and live in one place
+(`P_*` in vt_ansi.c).
+
+DECterm, xterm and PuTTY show ANSI colour; a real VT220/VT320 ignores the colour
+parameters. `DEFINE VTREE$DISPLAY MONO` gives the monochrome rendition (bold,
+underline, reverse), which reads better on such a terminal.

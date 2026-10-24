@@ -266,7 +266,12 @@ void vt_view_fill(vt_app *a, int height, int width)
     vt_draw_title(a, w->path);
     {
         int wl = (int) strlen(where), at = s->cols - 17 - 4 - wl;
-        if (at > 10) { vt_fill(s, 0, at - 2, 2, ' ', VT_A_REV); vt_put(s, 0, at, where, VT_A_REV, -1); }
+        if (at > 10) {
+            vt_role(s, VT_R_TITLE);
+            vt_fill(s, 0, at - 2, 2, ' ', VT_A_REV);
+            vt_put(s, 0, at, where, VT_A_REV, -1);
+            vt_role(s, VT_R_AUTO);
+        }
     }
     if (a->gold)
         vt_draw_bottom(a, "GOLD", "PF3 &Find   Up top   Down bottom", "PF1 cancel GOLD");

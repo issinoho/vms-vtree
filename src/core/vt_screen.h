@@ -23,17 +23,23 @@
 #define VT_G_BTEE    'v'
 #define VT_G_CROSS   'n'
 
-typedef struct { unsigned char ch, attr; } vt_cell;
+/* What a cell is, for the colour palette (D11). VT_R_AUTO: decided by its
+   rendition (plain text, bold key, highlight bar, line drawing...). */
+enum { VT_R_AUTO, VT_R_TITLE, VT_R_MENU, VT_R_MENU_LABEL };
+
+typedef struct { unsigned char ch, attr, role; } vt_cell;
 
 typedef struct {
     int rows, cols;
     vt_cell *cell;           /* rows * cols */
     int cursor_row, cursor_col, cursor_on;
+    unsigned char role;      /* given to every cell written from now on */
 } vt_screen;
 
 int  vt_screen_init(vt_screen *s, int rows, int cols);   /* 0 on no memory */
 void vt_screen_free(vt_screen *s);
 void vt_screen_clear(vt_screen *s);
+void vt_role(vt_screen *s, unsigned char role);              /* VT_R_AUTO after a clear */
 vt_cell *vt_at(vt_screen *s, int row, int col);           /* 0 when outside */
 
 /* Text at (row, col), cut at max columns (max < 0: to the edge). Control

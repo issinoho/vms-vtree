@@ -36,6 +36,15 @@ XTree code, help text or artwork.
   system services with exact status checks.
 - **Never descend into a directory alias** in a recursive operation (D8).
 - Every destructive operation previews, confirms (default No) and logs (D10).
+- **The screen goes through `vt_ansi.c`** (D11), never through SMG$ output calls:
+  SMG$ is for keys and broadcast trapping only.
+
+## Testing
+
+`make test` (Linux: unit checks and screen snapshots; `make snapshots` rewrites
+them, then read every changed one). `tools/live.sh <node> [step...]` uploads,
+runs `build_vms TEST` and drives VTREE on a pseudo-terminal; `tools/vtscreen.py
+--colours` shows the screens and the palette map.
 
 ## OpenVMS
 

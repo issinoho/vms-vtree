@@ -40,6 +40,8 @@ class Screen:
         self.at = [[' '] * cols for _ in range(rows)]
         self.r = self.c = 0
         self.sgr = set()
+        self.fg, self.bg = 7, 0
+        self.col = [[' '] * cols for _ in range(rows)]
         self.g = ['B', 'B']
         self.shift = 0
         self.top, self.bot = 0, rows - 1
@@ -47,9 +49,9 @@ class Screen:
 
     def scroll(self, n=1):
         for _ in range(n):
-            del self.ch[self.top]; del self.at[self.top]
-            self.ch.insert(self.bot, [' '] * self.cols)
-            self.at.insert(self.bot, [' '] * self.cols)
+            for g in (self.ch, self.at, self.col):
+                del g[self.top]
+                g.insert(self.bot, [' '] * self.cols)
 
     def put(self, x):
         if self.c >= self.cols:
@@ -59,7 +61,20 @@ class Screen:
         self.ch[self.r][self.c] = GFX.get(x, x) if gfx else x
         a = ''.join(sorted(self.sgr))
         self.at[self.r][self.c] = a[0] if a else ' '
+        self.col[self.r][self.c] = self.colour_code()
         self.c += 1
+
+    def colour_code(self):
+        bold = 'B' in self.sgr
+        key = (self.fg, self.bg)
+        if key == (7, 4): return 'w' if bold else '.'
+        if key == (3, 4): return 'y'
+        if key == (6, 4): return 'C' if bold else 'c'
+        if key == (0, 6): return '#'
+        if key == (0, 7): return '='
+        if self.bg == 1: return '!'
+        return '?'
+
 
     def lf(self):
         if self.r == self.bot:
@@ -97,8 +112,13 @@ class Screen:
                 self.clear_line(self.r, 0, self.cols)
         elif final == 'm':
             for p in nums or [0]:
+                if 30 <= p <= 37:
+                    self.fg = p - 30
+                elif 40 <= p <= 47:
+                    self.bg = p - 40
                 if p == 0:
                     self.sgr = set()
+                    self.fg, self.bg = 7, 0
                 elif p == 1:
                     self.sgr.add('B')
                 elif p == 4:
@@ -121,17 +141,20 @@ class Screen:
             self.clear_line(self.r, self.c, min(self.cols, self.c + (n or 1)))
         elif final == 'L':
             for _ in range(n or 1):
-                del self.ch[self.bot]; del self.at[self.bot]
-                self.ch.insert(self.r, [' '] * self.cols); self.at.insert(self.r, [' '] * self.cols)
+                for g in (self.ch, self.at, self.col):
+                    del g[self.bot]
+                    g.insert(self.r, [' '] * self.cols)
         elif final == 'M':
             for _ in range(n or 1):
-                del self.ch[self.r]; del self.at[self.r]
-                self.ch.insert(self.bot, [' '] * self.cols); self.at.insert(self.bot, [' '] * self.cols)
+                for g in (self.ch, self.at, self.col):
+                    del g[self.r]
+                    g.insert(self.bot, [' '] * self.cols)
 
     def clear_line(self, r, c1, c2):
         for c in range(c1, c2):
             self.ch[r][c] = ' '
             self.at[r][c] = ' '
+            self.col[r][c] = ' '
 
     def feed(self, data):
         i = 0
@@ -176,16 +199,19 @@ class Screen:
                 self.put(x)
             i += 1
 
-    def text(self, attrs=False):
+    def text(self, attrs=False, colours=False):
         lines = [''.join(row).rstrip() for row in self.ch]
         if attrs:
             lines += ['', 'renditions:'] + [''.join(row).rstrip() for row in self.at]
+        if colours:
+            lines += ['', 'colours (. text  w bright  y yellow  c/C cyan  # bar  = bar off  ! error):'] + \
+                     [''.join(row).rstrip() for row in self.col]
         return '\n'.join(lines)
 
 
 def main():
     args = sys.argv[1:]
-    rows, cols, attrs, steps = 24, 80, False, []
+    rows, cols, attrs, colours, steps = 24, 80, False, False, []
     while args and args[0].startswith('--'):
         a = args.pop(0)
         if a == '--rows':
@@ -194,6 +220,8 @@ def main():
             cols = int(args.pop(0))
         elif a == '--attrs':
             attrs = True
+        elif a == '--colours':
+            colours = True
         elif a == '--step':
             steps.append(args.pop(0))
     text = open(args[0], encoding='latin-1').read()
@@ -204,7 +232,7 @@ def main():
         s.feed(decode(body.rstrip('\n')))
         if not steps or label.strip() in steps:
             print('=' * 30, label)
-            print(s.text(attrs))
+            print(s.text(attrs, colours))
 
 
 if __name__ == '__main__':

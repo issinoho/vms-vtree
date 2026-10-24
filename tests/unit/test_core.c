@@ -7,6 +7,7 @@
 #include "vt_edit.h"
 #include "vt_tree.h"
 #include "vt_screen.h"
+#include "vt_ansi.h"
 
 static int checks, fails;
 #define CHECK(c) do { checks++; if (!(c)) { fails++; printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #c); } } while (0)
@@ -179,6 +180,48 @@ static void test_screen(void)
     vt_screen_free(&s);
 }
 
+static char got[4096]; static int gotn;
+static void grab(void *ctx, const char *b, int n)
+{
+    (void) ctx;
+    if (gotn + n < (int) sizeof got) { memcpy(got + gotn, b, (size_t) n); gotn += n; got[gotn] = '\0'; }
+}
+
+static void test_ansi(void)
+{
+    vt_screen s;
+    vt_cell prev[2 * 4];
+    vt_screen_init(&s, 2, 4);
+    vt_put(&s, 0, 0, "ab", 0, -1);
+    vt_put(&s, 0, 2, "C", VT_A_BOLD, -1);
+    vt_gfx(&s, 1, 0, VT_G_HLINE, 0);
+    vt_put(&s, 1, 1, "X", VT_A_REV, -1);
+    /* the palette */
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 0, 0), 1), "0;37;44");     /* white on blue */
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 0, 2), 1), "0;1;33;44");   /* yellow key */
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 0), 1), "0;36;44");     /* cyan frame */
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 1), 1), "0;30;46");     /* black on cyan bar */
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 1), 0), "0;7");         /* mono: reverse */
+    vt_role(&s, VT_R_MENU_LABEL);
+    vt_put(&s, 0, 3, "D", VT_A_REV, -1);
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 0, 3), 1), "0;1;36;44");   /* DIR / COMMANDS */
+    vt_role(&s, VT_R_AUTO);
+    /* a full frame, then only what changed */
+    gotn = 0;
+    vt_ansi_render(&s, 0, 1, grab, 0);
+    CHECK(strstr(got, "\033[1;1H\033[0;37;44mab\033[0;1;33;44mC") != 0);
+    CHECK(strstr(got, "\033(0q\033[0;30;46m\033(BX") != 0);
+    memcpy(prev, s.cell, sizeof prev);
+    vt_put(&s, 0, 1, "z", 0, -1);
+    gotn = 0;
+    vt_ansi_render(&s, prev, 1, grab, 0);
+    CHECK_STR(got, "\033[?25l\033[1;2H\033[0;37;44mz");
+    gotn = 0;
+    vt_ansi_render(&s, prev, 1, grab, 0);
+    CHECK_STR(got, "\033[?25l");                               /* nothing changed */
+    vt_screen_free(&s);
+}
+
 int main(void)
 {
     test_util();
@@ -186,6 +229,7 @@ int main(void)
     test_edit();
     test_tree();
     test_screen();
+    test_ansi();
     printf("test_core: %d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;
 }

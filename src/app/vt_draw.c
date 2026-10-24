@@ -10,8 +10,11 @@
 static void menu_line(vt_screen *s, int row, const char *label, const char *text, unsigned char base)
 {
     int col = 1, n;
+    vt_role(s, VT_R_MENU);
     vt_fill(s, row, 0, s->cols, ' ', base);
+    vt_role(s, VT_R_MENU_LABEL);
     n = vt_put(s, row, col, label, (unsigned char) (base | VT_A_REV), -1);
+    vt_role(s, VT_R_MENU);
     col += n + 2;
     for (; *text && col < s->cols; text++) {
         if (*text == '&' && text[1]) {
@@ -19,6 +22,7 @@ static void menu_line(vt_screen *s, int row, const char *label, const char *text
             vt_fill(s, row, col++, 1, (unsigned char) *text, (unsigned char) (base | VT_A_BOLD));
         } else vt_fill(s, row, col++, 1, (unsigned char) *text, base);
     }
+    vt_role(s, VT_R_AUTO);
 }
 
 void vt_draw_title(vt_app *a, const char *what)
@@ -28,10 +32,13 @@ void vt_draw_title(vt_app *a, const char *what)
     int cl;
     vt_fmt_time(vtp_now(), 0, clock, sizeof clock);
     cl = (int) strlen(clock);
+    vt_role(s, VT_R_TITLE);
     vt_fill(s, 0, 0, s->cols, ' ', VT_A_REV);
-    snprintf(t, sizeof t, " VTREE   %s", what);
+    snprintf(t, sizeof t, "         %s", what);
     vt_put(s, 0, 0, t, VT_A_REV, s->cols - cl - 3);
+    vt_put(s, 0, 1, "VTREE", VT_A_REV | VT_A_BOLD, -1);
     vt_put(s, 0, s->cols - cl - 1, clock, VT_A_REV, -1);
+    vt_role(s, VT_R_AUTO);
 }
 
 void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *l2)

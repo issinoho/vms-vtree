@@ -18,9 +18,12 @@ void vt_screen_free(vt_screen *s) { free(s->cell); s->cell = 0; }
 void vt_screen_clear(vt_screen *s)
 {
     int i;
-    for (i = 0; i < s->rows * s->cols; i++) { s->cell[i].ch = ' '; s->cell[i].attr = 0; }
+    for (i = 0; i < s->rows * s->cols; i++) { s->cell[i].ch = ' '; s->cell[i].attr = 0; s->cell[i].role = 0; }
     s->cursor_on = 0;
+    s->role = VT_R_AUTO;
 }
+
+void vt_role(vt_screen *s, unsigned char role) { s->role = role; }
 
 vt_cell *vt_at(vt_screen *s, int row, int col)
 {
@@ -36,7 +39,7 @@ int vt_put(vt_screen *s, int row, int col, const char *text, unsigned char attr,
         unsigned char ch = (unsigned char) *text;
         if (!(c = vt_at(s, row, col + n))) break;
         if (ch < 32 || ch == 127 || (ch >= 128 && ch < 160)) ch = '?';
-        c->ch = ch; c->attr = attr;
+        c->ch = ch; c->attr = attr; c->role = s->role;
     }
     return n;
 }
@@ -46,13 +49,13 @@ void vt_fill(vt_screen *s, int row, int col, int count, unsigned char ch, unsign
     int i;
     vt_cell *c;
     for (i = 0; i < count; i++)
-        if ((c = vt_at(s, row, col + i))) { c->ch = ch; c->attr = attr; }
+        if ((c = vt_at(s, row, col + i))) { c->ch = ch; c->attr = attr; c->role = s->role; }
 }
 
 void vt_gfx(vt_screen *s, int row, int col, unsigned char g, unsigned char attr)
 {
     vt_cell *c = vt_at(s, row, col);
-    if (c) { c->ch = g; c->attr = (unsigned char) (attr | VT_A_GFX); }
+    if (c) { c->ch = g; c->attr = (unsigned char) (attr | VT_A_GFX); c->role = s->role; }
 }
 
 void vt_hline(vt_screen *s, int row, int c1, int c2)

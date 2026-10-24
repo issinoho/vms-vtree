@@ -67,7 +67,12 @@ Repo skeleton from vms-histsh (`tools/vms.sh`, PTYDRIVE in `tests/vms/`), these 
 and three probes on both nodes: SMG$ screen and keys on a pseudo-terminal (N1), tree
 reading speed (N2), privileges and file security (N3, N4). Outcomes: D5, D7.
 
-## Phase 1: the read-only browser
+## Phase 1: the read-only browser (built and tested 2026-10-24; awaiting the user's try)
+
+Status: everything listed below works on x86 and IA64 except resize while running
+(the size is read at start-up) and the Do key (later). Tested with `make test`,
+`build_vms TEST` on both nodes, and `tools/live.sh` (PTYDRIVE scripts
+`live_keys.txt` and `big_keys.txt`, screens read by eye). Colour: D11.
 
 Nothing in this phase can change a file. Core first, on Linux with the stub platform:
 - Models: devices, the lazy tree (D7), the file window (D9 versions), tag set, filespec
