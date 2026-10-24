@@ -9,8 +9,11 @@
 #define P_KEY     "0;1;33;44"   /* yellow on blue: keys, labels, tags */
 #define P_FRAME   "0;36;44"     /* cyan lines */
 #define P_LABEL   "0;1;36;44"   /* bright cyan: DIR, COMMANDS */
-#define P_BAR     "0;30;46"     /* black on cyan: the highlight bar */
-#define P_BAR_OFF "0;30;47"     /* black on white: the bar of the window not in use */
+/* The bars are written as reverse video of cyan (white) on black: the same black
+   on cyan on a colour terminal, and still a bar where colour is ignored or turned
+   into one phosphor (a monochrome emulator, a real VT220). D13. */
+#define P_BAR     "0;36;40;7"   /* black on cyan: the highlight bar */
+#define P_BAR_OFF "0;37;40;7"   /* black on white: the bar of the window not in use */
 #define P_ERROR   "0;1;37;41"   /* bright white on red */
 #define P_UNDER   "0;4;37;44"
 

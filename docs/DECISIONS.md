@@ -157,3 +157,12 @@ Phase 2 safeguards, so that nothing is lost:
 - Move and rename keep the version number; a clash is reported, never overwritten.
 - Moving between disks waits for Phase 3 (it needs a delete).
 - A failed copy leaves no partial file. Each change is logged (D10's log).
+
+## D13. The highlight bars are reverse video in colour mode too (2026-10-24, user report)
+
+Found in vms-vlmf, which shares this renderer (its D10): on a terminal that drops
+colour or maps it to one phosphor, D11's black-on-cyan bar (plain SGR colours)
+vanished, so the user saw no highlighted entry. The bars are now cyan (or white) on
+black with reverse video (`0;36;40;7`): exactly as before on a colour terminal,
+reverse video anywhere else. The user confirmed the VLMF fix on their terminal. The
+title and menu lines still rely on colour; `VTREE$DISPLAY MONO` makes them reverse.

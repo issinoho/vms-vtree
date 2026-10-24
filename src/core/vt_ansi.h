@@ -19,7 +19,7 @@ void vt_ansi_render(const vt_screen *cur, vt_cell *prev, int colour, vt_emit_fn 
    rendition, ASCII, cursor on, screen cleared). */
 void vt_ansi_begin(int colour, vt_emit_fn emit, void *ctx);
 void vt_ansi_end(vt_emit_fn emit, void *ctx);
-/* The SGR parameters a cell gets, e.g. "0;30;46". For tests. */
+/* The SGR parameters a cell gets, e.g. "0;36;40;7". For tests. */
 const char *vt_ansi_sgr(const vt_cell *c, int colour);
 
 #endif

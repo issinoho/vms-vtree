@@ -202,7 +202,7 @@ static void test_ansi(void)
     CHECK_STR(vt_ansi_sgr(vt_at(&s, 0, 0), 1), "0;37;44");     /* white on blue */
     CHECK_STR(vt_ansi_sgr(vt_at(&s, 0, 2), 1), "0;1;33;44");   /* yellow key */
     CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 0), 1), "0;36;44");     /* cyan frame */
-    CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 1), 1), "0;30;46");     /* black on cyan bar */
+    CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 1), 1), "0;36;40;7");   /* black on cyan bar, as reverse video (D13) */
     CHECK_STR(vt_ansi_sgr(vt_at(&s, 1, 1), 0), "0;7");         /* mono: reverse */
     vt_role(&s, VT_R_MENU_LABEL);
     vt_put(&s, 0, 3, "D", VT_A_REV, -1);
@@ -212,7 +212,7 @@ static void test_ansi(void)
     gotn = 0;
     vt_ansi_render(&s, 0, 1, grab, 0);
     CHECK(strstr(got, "\033[1;1H\033[0;37;44mab\033[0;1;33;44mC") != 0);
-    CHECK(strstr(got, "\033(0q\033[0;30;46m\033(BX") != 0);
+    CHECK(strstr(got, "\033(0q\033[0;36;40;7m\033(BX") != 0);
     memcpy(prev, s.cell, sizeof prev);
     vt_put(&s, 0, 1, "z", 0, -1);
     gotn = 0;
