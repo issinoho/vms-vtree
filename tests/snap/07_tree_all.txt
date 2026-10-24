@@ -1,0 +1,24 @@
+ VTREE   DKA0:[000000]                                        24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────┬────────────────────┐
+│ DKA0:                                                   │ FILE               │
+│ ├─SYS0                                                  │  *.*;*             │
+│ │ ├─SYSCOMMON (alias)                                   │ DISK               │
+│ │ └─SYSEXE                                              │  DKA0:             │
+│ ├─USERS                                                 │  VMSSYS            │
+│ │ ├─GUEST                                               │  Free    1,234,567 │
+│ │ ├─IAIN                                                │ DIRECTORY          │
+│ │ │ ├─COM                                               │  Files           0 │
+│ │ │ └─VMS_VTREE                                         │  Blocks          0 │
+│ │ └─SYSTEM ?                                            │ MATCHING           │
+│ └─VMS$COMMON                                            │  Files           0 │
+│   ├─SYSEXE                                              │  Blocks          0 │
+├─────────────────────────────────────────────────────────┤ TAGGED             │
+│ No files                                                │  Files           2 │
+│                                                         │  Blocks          5 │
+│                                                         │                    │
+│                                                         │ IAIN [200,101]     │
+│                                                         │  Privs off         │
+│                                                         │                    │
+└─────────────────────────────────────────────────────────┴────────────────────┘
+ DIR  Avail Branch Filespec Info Log Showall Tag Untag  + - *  ; versions
+ COMMANDS  PF1 GOLD   Return files   Select tag   Help   F10 exit

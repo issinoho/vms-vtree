@@ -1,0 +1,24 @@
+ VTREE   DKA0:[USERS.IAIN]LOGIN.COM;12   Line 1 of 4          24-OCT-2026 15:02
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ $ set noon                                                                   │
+│ $ define/nolog vtree$test yes                                                │
+│ $ ! a comment with a    tab                                                  │
+│ $ exit                                                                       │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ VIEW  Find  PF3 next  H hex  Left/Right scroll  Prev/Next page
+ COMMANDS  PF1 GOLD   GOLD Up/Down top/bottom   F10 back

@@ -1,0 +1,100 @@
+/* vt_platform.h - the whole OS surface of VTREE (D3). No VMS types.
+   src/plat/vms/ implements it with RMS, ACP QIOs, system services and SMG$;
+   src/plat/stub/ with an in-memory file system for the Linux tests.
+
+   Status values are VMS condition values: odd = success. vtp_message() turns one
+   into text. Phase 1 has no call that changes a file. */
+#ifndef VT_PLATFORM_H
+#define VT_PLATFORM_H
+
+#include "vt_types.h"
+#include "vt_screen.h"
+
+#define VTP_OK 1u
+#define VTP_STOPPED 0x1001u   /* a list callback asked to stop (not a VMS code) */
+
+typedef struct {
+    char user[40];
+    unsigned int uic;
+    char privs_off[80];       /* the privileges VTREE turned off, "" if none were on */
+    char node[16];
+} vtp_session;
+
+/* Start: switch off protection-overriding privileges (D5), take the terminal.
+   Returns a status; on failure nothing has been changed. */
+unsigned int vtp_start(vtp_session *s);
+void vtp_stop(void);                        /* give the terminal back */
+
+/* Screen */
+void vtp_screen_size(int *rows, int *cols);
+void vtp_draw(const vt_screen *s);          /* show the model (only what changed) */
+void vtp_repaint(void);                     /* redraw everything (Ctrl/W) */
+/* A key, waiting at most timeout seconds (0: only look). VK_TIMEOUT when none. */
+int  vtp_key(int timeout);
+/* A broadcast message that arrived, copied into buf. 0 when none. */
+int  vtp_broadcast(char *buf, int size);
+
+/* Time and messages */
+vt_time vtp_now(void);
+void vtp_message(unsigned int status, char *buf, int size);
+/* User name for a UIC ("IAIN", or "" if it has none). */
+void vtp_uic_name(unsigned int uic, char *buf, int size);
+
+/* Devices */
+typedef struct {
+    char name[64];            /* "DKA0:" */
+    char label[16];           /* volume label */
+    char logvol[64];          /* "DISK$USER" or "" */
+    unsigned int free_blocks, max_blocks;
+    int ods;                  /* 2 or 5, 0 if unknown */
+} vtp_device;
+typedef int (*vtp_device_cb)(void *ctx, const vtp_device *d);
+unsigned int vtp_devices(vtp_device_cb cb, void *ctx);      /* mounted disks */
+unsigned int vtp_device_info(const char *dev, vtp_device *d);
+
+/* Where the user is: the physical device and directory of SYS$DISK:[], or of spec
+   (any file or directory specification; logical names allowed). dir is normalised
+   ("[USERS.IAIN]"). Fails if the directory doesn't exist. */
+unsigned int vtp_locate(const char *spec, char *dev, int devsz, char *dir, int dirsz);
+
+/* Directory listing. pattern is "*.DIR;1" (subdirectories) or "*.*;*".
+   With attrs, each entry's attributes are read without opening the file (N2).
+   The callback returns 0 to go on, nonzero to stop (the call then returns
+   VTP_STOPPED). Entries come in directory order. */
+typedef struct {
+    const char *name, *type;  /* "LOGIN", ".COM" */
+    unsigned int ver;
+    unsigned short fid[3];
+    int is_dir;               /* directory bit set (always read for .DIR entries) */
+    int is_alias;             /* directory entry whose back-link is not here (N5) */
+    int is_self;              /* the directory's own entry ([000000]000000.DIR) */
+    vt_attrs a;               /* a.status = 0 when attrs were not asked for */
+} vtp_entry;
+typedef int (*vtp_entry_cb)(void *ctx, const vtp_entry *e);
+unsigned int vtp_list(const char *dev, const char *dir, const char *pattern, int attrs,
+                      vtp_entry_cb cb, void *ctx);
+
+/* Details for the Info screen: one file's security. */
+typedef struct {
+    char owner[64];           /* "[IAIN]" or "[200,101]" */
+    int acl_count;
+    char acl[32][128];        /* formatted ACEs */
+    unsigned int acl_status;  /* 1, or why the ACL couldn't be read */
+} vtp_security;
+unsigned int vtp_security_get(const char *path, vtp_security *s);
+
+/* Viewing a file, read-only and shared (other users may have it open).
+   Record mode: records in order; vtp_view_pos gives a position to come back to.
+   Block mode: 512-byte virtual blocks, numbered from 1. */
+typedef struct vtp_view vtp_view;
+typedef struct { unsigned int a, b; } vtp_pos;
+unsigned int vtp_view_open(const char *path, int blocks, vtp_view **v);
+/* Next record into buf (cut at size); *len is its full length; *pos where it began.
+   Returns RMS$_EOF-like failure (even status) at the end. */
+unsigned int vtp_view_next(vtp_view *v, char *buf, int size, int *len, vtp_pos *pos);
+unsigned int vtp_view_seek(vtp_view *v, const vtp_pos *pos);
+unsigned int vtp_view_block(vtp_view *v, unsigned int vbn, unsigned char *buf, int *len);
+void vtp_view_close(vtp_view *v);
+int vtp_is_eof(unsigned int status);
+
+#endif

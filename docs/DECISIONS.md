@@ -39,7 +39,8 @@ N3: the developer's own account starts with SYSPRV, READALL and GRPPRV on, so wi
 this a casual user of VTREE would delete or overwrite files that protection was meant
 to save. VTREE turns off BYPASS, SYSPRV, READALL and GRPPRV at start-up (process
 level, reversible) and restores the previous set at exit, including after Ctrl/Y and
-errors (exit handler). The status panel shows "Privs off".
+errors: a temporary `$SETPRV` is undone by image rundown whatever the exit (N7). The
+status panel shows "Privs off".
 
 Open for Phase 3/4: how a system manager deliberately works with privileges on. Proposed:
 a `/PRIVILEGES` qualifier only (no in-program toggle), and a reverse-video
@@ -75,14 +76,14 @@ format) may be much faster than `$SEARCH`. Probe in Phase 1 if the lazy tree fee
 A system disk has alias directory entries (`[SYS0]SYSCOMMON.DIR` is also
 `[000000]VMS$COMMON.DIR`). Following one double-counts in a scan and, in a prune,
 deletes another tree. VTREE recognises an alias (a directory file ID already seen, or a
-back-link that is not the parent) and shows it as such but never descends into it for a
-recursive count, copy or delete. To be probed in Phase 1.
+back-link that is not the directory it was found in, N5) and shows it as such but never
+descends into it for a recursive count, copy or delete.
 
-## D9. Every version is shown, like DIRECTORY (2026-10-24, proposed)
+## D9. Every version is shown, like DIRECTORY (2026-10-24, confirmed by the user)
 
 The file window lists all versions (`*.*;*`) by default, as DIRECTORY does. A key
 switches to "highest version only". A deletion takes the exact version selected unless
-the user chose "all versions". To confirm with the user at the Phase 1 exit.
+the user chose "all versions".
 
 ## D10. Destructive operations: preview, confirm, log (2026-10-24, proposed)
 

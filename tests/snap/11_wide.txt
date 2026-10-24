@@ -1,0 +1,30 @@
+ VTREE   DKA0:[USERS.IAIN.VMS_VTREE]                                                                              24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────────────────┐
+│ DKA0:                                                                                                       │ FILE               │
+│ ├─SYS0                                                                                                      │  *.*;*             │
+│ ├─USERS                                                                                                     │ DISK               │
+│ │ ├─GUEST                                                                                                   │  DKA0:             │
+│ │ ├─IAIN                                                                                                    │  VMSSYS            │
+│ │ │ ├─COM                                                                                                   │  Free    1,234,567 │
+│ │ │ └─VMS_VTREE                                                                                             │ DIRECTORY          │
+│ │ └─SYSTEM                                                                                                  │  Files           2 │
+│ └─VMS$COMMON                                                                                                │  Blocks          9 │
+│                                                                                                             │ MATCHING           │
+│                                                                                                             │  Files           2 │
+│                                                                                                             │  Blocks          9 │
+│                                                                                                             │ TAGGED             │
+│                                                                                                             │  Files           0 │
+│                                                                                                             │  Blocks          0 │
+│                                                                                                             │                    │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ IAIN [200,101]     │
+│ BUILD_VMS.COM;3   README.MD;7                                                                               │  Privs off         │
+│                                                                                                             │                    │
+│                                                                                                             │                    │
+│                                                                                                             │                    │
+│                                                                                                             │                    │
+│                                                                                                             │                    │
+│                                                                                                             │                    │
+│                                                                                                             │                    │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────┴────────────────────┘
+ DIR  Avail Branch Filespec Info Log Showall Tag Untag  + - *  ; versions
+ COMMANDS  PF1 GOLD   Return files   Select tag   Help   F10 exit

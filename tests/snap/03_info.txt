@@ -1,0 +1,24 @@
+ VTREE   File information                                     24-OCT-2026 15:02
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ File               DKA0:[USERS.IAIN]LOGIN.COM;11                             │
+│ File ID            (115,1,0)                                                 │
+│ Size               2 blocks used, 16 allocated                               │
+│ Owner              [IAIN]  [200,101]                                         │
+│ Created             1-OCT-2026 09:30:00.00                                   │
+│ Revised             1-OCT-2026 09:30:00.00 (1 revision)                      │
+│ Expires            <None specified>                                          │
+│ Backup             <No backup recorded>                                      │
+│ Organization       Sequential                                                │
+│ Record format      Variable length, maximum 255 bytes                        │
+│ Record attributes  Carriage return carriage control                          │
+│ Version limit      None                                                      │
+│ Characteristics    None                                                      │
+│ File protection    (S:RWED,O:RWED,G:RE,W)                                    │
+│ Access Cntrl List  None                                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ INFO  Up/Down Prev/Next scroll
+ COMMANDS  Any other key returns

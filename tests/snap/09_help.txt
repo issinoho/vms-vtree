@@ -1,0 +1,24 @@
+ VTREE   Help                                                 24-OCT-2026 15:02
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ THE DIRECTORY TREE                                                           │
+│                                                                              │
+│   Up/Down, Prev/Next    move;   GOLD Up/Down  top/bottom                     │
+│   Left / Right          parent / first subdirectory                          │
+│   +   -   *             open one level / close / open the whole branch       │
+│                         (a + after a name: closed, with subdirectories)      │
+│   Return                the file window for this directory                   │
+│   T  U  Select          tag / untag the files of this directory              │
+│   GOLD T  GOLD U        tag / untag the files of the whole branch            │
+│   B                     Branch: the files of this directory and below        │
+│   S                     Showall: the files of every directory read so far    │
+│   GOLD L                Log the whole disk (read every directory)            │
+│   L                     Log another disk or directory                        │
+│   A                     Avail: the mounted disks                             │
+│   F  Find               filespec:  *.COM   *.C;*,*.H   LOGIN.COM;0           │
+│   ;                     all versions / highest versions only                 │
+│   GOLD S                sort by name, type, size or date                     │
+│   I                     Info: details of this directory file                 │
+│   GOLD R                read this directory again                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+ HELP  Up/Down Prev/Next scroll
+ COMMANDS  Any other key returns

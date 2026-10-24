@@ -1,0 +1,24 @@
+ VTREE   DKA0:[USERS.IAIN]                                    24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────┬────────────────────┐
+│ DKA0:                                                   │ FILE               │
+│ ├─SYS0                                                  │  *.*;*             │
+│ ├─USERS                                                 │ DISK               │
+│ │ ├─GUEST                                               │  DKA0:             │
+│ │ ├─IAIN                                                │  VMSSYS            │
+│ │ │ ├─COM                                               │  Free    1,234,567 │
+│ │ │ └─VMS_VTREE                                         │ DIRECTORY          │
+│ │ └─SYSTEM                                              │  Files           5 │
+│ └─VMS$COMMON                                            │  Blocks         53 │
+│                                                         │ MATCHING           │
+│                                                         │  Files           5 │
+│                                                         │  Blocks         53 │
+├─────────────────────────────────────────────────────────┤ TAGGED             │
+│ LOGIN.COM;12   LOGIN.COM;11   MAKEFILE.;1               │  Files           0 │
+│ NOTES.TXT;1    SECRET.DAT;1                             │  Blocks          0 │
+│                                                         │                    │
+│                                                         │ IAIN [200,101]     │
+│                                                         │  Privs off         │
+│                                                         │                    │
+└─────────────────────────────────────────────────────────┴────────────────────┘
+ DIR  Avail Branch Filespec Info Log Showall Tag Untag  + - *  ; versions
+ COMMANDS  PF1 GOLD   Return files   Select tag   Help   F10 exit

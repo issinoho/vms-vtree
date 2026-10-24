@@ -64,3 +64,27 @@ Same probe, on a scratch file in the work directory:
   context reads the ACL back one ACE per call; `$FORMAT_ACL` gives the text back.
 - There is no `$RELEASE_SECURITY` prototype in `starlet.h`. The read context is
   released by one more `$GET_SECURITY` call with `OSS$M_RELCTX`.
+
+## N5. A directory alias is recognised by its back-link (2026-10-24, x86 and IA64)
+
+`probes/probe_alias.c` on `SYS$SYSDEVICE:[SYS0]*.DIR;1`: every subdirectory's header
+back-link (`ATR$C_BACKLINK`) equals the directory it was found in (`NAML$W_DID`),
+except `SYSCOMMON.DIR`, whose back-link is the MFD (4,4,0): it is the alias of
+`[000000]VMS$COMMON.DIR`. The directory bit (`FCH$V_DIRECTORY`, bit 13 of
+`ATR$C_UCHAR`) is set on all of them. This is D8's test.
+
+## N6. Physical names of a rooted device (2026-10-24, x86 and IA64)
+
+`$PARSE` of `SYS$LOGIN` (`USER$ROOT:[IAIN]`, `USER$ROOT` a concealed rooted logical):
+by default device `USER$ROOT:`, directory `[IAIN]`. With `NAML$M_NOCONCEAL`: IA64
+`DKA800:` and `[USERS.][IAIN]`; x86 `X86VMS$DKA0:` and `[USERS.][iain]` (the node's
+allocation-class name, and the directory in the case it was created in). VTREE logs
+the physical device and merges `.][` into `.` to get `[USERS.IAIN]`. Directory names
+must be compared without regard to case.
+
+## N7. A temporary $SETPRV is undone at image exit (2026-10-24, x86 and IA64)
+
+`probe_alias` turns SYSPRV off with `$SETPRV` prmflg 0 and exits; DCL then reports
+`F$PRIVILEGE("SYSPRV")` TRUE again. Image rundown resets the current privileges from
+the process's, so D5's "restore on every exit path" holds even for an abnormal exit,
+with no exit handler needed for it.

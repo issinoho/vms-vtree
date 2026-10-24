@@ -1,0 +1,24 @@
+ VTREE   DKA0:[USERS.IAIN]LOGIN.COM;11                        24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────┬────────────────────┐
+│ LOGIN.COM;12         1/16        23-OCT-2026 08:15      │ FILE               │
+│ LOGIN.COM;11         2/16         1-OCT-2026 09:30      │  *.*;*             │
+│ MAKEFILE.;1          3/16         1-OCT-2026 09:30      │ DISK               │
+│ NOTES.TXT;1         40/48         2-SEP-2026 17:00      │  DKA0:             │
+│ SECRET.DAT;1         7/16         1-OCT-2026 09:30      │  VMSSYS            │
+│                                                         │  Free    1,234,567 │
+│                                                         │ DIRECTORY          │
+│                                                         │  Files           5 │
+│                                                         │  Blocks         53 │
+│                                                         │ MATCHING           │
+│                                                         │  Files           5 │
+│                                                         │  Blocks         53 │
+│                                                         │ TAGGED             │
+│                                                         │  Files           0 │
+│                                                         │  Blocks          0 │
+│                                                         │                    │
+│                                                         │ IAIN [200,101]     │
+│                                                         │  Privs off         │
+│                                                         │                    │
+└─────────────────────────────────────────────────────────┴────────────────────┘
+ FILE  Filespec Info Tag Untag View  = format  ; versions
+ COMMANDS  PF1 GOLD   Return tree   Select tag   Help   F10 tree
