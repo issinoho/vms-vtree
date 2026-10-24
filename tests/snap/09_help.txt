@@ -18,7 +18,7 @@
 │   ;                     all versions / highest versions only                 │
 │   GOLD S                sort by name, type, size or date                     │
 │   I                     Info: details of this directory file                 │
-│   GOLD R                read this directory again                            │
+│   M                     Make a directory here       R  Rename this one       │
 └──────────────────────────────────────────────────────────────────────────────┘
  HELP  Up/Down Prev/Next scroll
  COMMANDS  Any other key returns

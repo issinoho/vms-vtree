@@ -23,6 +23,15 @@ void stub_file(const char *dev, const char *dir, const char *name, unsigned int 
 void stub_alias(const char *dev, const char *in, const char *name, const char *target);
 /* The entry [in]name.DIR;1 can't have its header read (back-link unknown, N8). */
 void stub_nolink(const char *dev, const char *in, const char *name);
+/* A directory's version limit (0 = none). */
+void stub_limit(const char *dev, const char *dir, int limit);
+/* The next copy of a file with this name fails (STUB_NOPRIV). */
+void stub_fail_copy(const char *name);
+/* The operation log so far, lines joined with '\n'; and the last spawn's file
+   ("DCL" for a subprocess, "" if none). */
+const char *stub_log(void);
+const char *stub_spawned(void);
+#define STUB_FEX 0x18292u       /* RMS$_FEX: file already exists */
 /* The next keys vtp_key will return; VK_NONE ends the list. */
 void stub_keys(const int *keys);
 

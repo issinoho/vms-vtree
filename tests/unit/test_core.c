@@ -8,6 +8,7 @@
 #include "vt_tree.h"
 #include "vt_screen.h"
 #include "vt_ansi.h"
+#include "vt_plan.h"
 
 static int checks, fails;
 #define CHECK(c) do { checks++; if (!(c)) { fails++; printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #c); } } while (0)
@@ -222,6 +223,51 @@ static void test_ansi(void)
     vt_screen_free(&s);
 }
 
+static void test_plan(void)
+{
+    char n[64], t[64];
+    CHECK(vt_name_apply("*.BAK", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK_STR(n, "LOGIN"); CHECK_STR(t, ".BAK");
+    CHECK(vt_name_apply("NEW.*", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK_STR(n, "NEW"); CHECK_STR(t, ".COM");
+    CHECK(vt_name_apply("OTHER", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK_STR(n, "OTHER"); CHECK_STR(t, ".COM");
+    CHECK(vt_name_apply("*.*", "MAKEFILE", ".", n, sizeof n, t, sizeof t));
+    CHECK_STR(n, "MAKEFILE"); CHECK_STR(t, ".");
+    CHECK(vt_name_apply("X.", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK_STR(t, ".");
+    CHECK(vt_name_apply("A^.B.TXT", "Z", ".Q", n, sizeof n, t, sizeof t));
+    CHECK_STR(n, "A^.B"); CHECK_STR(t, ".TXT");
+    CHECK(!vt_name_apply("A*.COM", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK(!vt_name_apply("X.COM;2", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK(!vt_name_apply("[X]Y.Z", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK(!vt_name_apply(".COM", "LOGIN", ".COM", n, sizeof n, t, sizeof t));
+    CHECK(vt_pattern_wild("*.BAK") && !vt_pattern_wild("X.BAK"));
+    CHECK(vt_valid_dirname("NEW_DIR$1-A"));
+    CHECK(!vt_valid_dirname("") && !vt_valid_dirname("A.B") && !vt_valid_dirname("A B"));
+    CHECK(!vt_valid_dirname("[X]") && !vt_valid_dirname("1234567890123456789012345678901234567890"));
+    CHECK(vt_version_room(0, 0, 1, 0) == VT_ROOM_OK);
+    CHECK(vt_version_room(2, 2, 1, 3) == VT_ROOM_OK);
+    CHECK(vt_version_room(3, 3, 1, 3) == VT_ROOM_LIMIT);
+    CHECK(vt_version_room(3, 3, 1, 32767) == VT_ROOM_OK);
+    CHECK(vt_version_room(1, 32767, 1, 0) == VT_ROOM_32767);
+    {
+        vt_tree tr;
+        unsigned short fid[3] = { 1, 1, 0 };
+        int r, a, b, c;
+        vt_tree_init(&tr);
+        r = vt_tree_root(&tr, "D:");
+        a = vt_tree_child(&tr, r, "AAA", fid, 0);
+        b = vt_tree_child(&tr, r, "BBB", fid, 0);
+        c = vt_tree_child(&tr, r, "CCC", fid, 0);
+        CHECK(vt_tree_rename(&tr, a, "ZZZ"));
+        CHECK(tr.n[r].child == b && tr.n[b].next == c && tr.n[c].next == a && tr.n[a].next == -1);
+        CHECK(vt_tree_rename(&tr, a, "AB"));
+        CHECK(tr.n[r].child == a && tr.n[a].next == b);
+        vt_tree_free(&tr);
+    }
+}
+
 int main(void)
 {
     test_util();
@@ -230,6 +276,7 @@ int main(void)
     test_tree();
     test_screen();
     test_ansi();
+    test_plan();
     printf("test_core: %d checks, %d failed\n", checks, fails);
     return fails ? 1 : 0;
 }

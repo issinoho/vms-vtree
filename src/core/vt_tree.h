@@ -78,6 +78,9 @@ int  vt_tree_reaches(const vt_tree *t, int a, int b);
 /* The highest node from which node is reachable in that sense. */
 int  vt_tree_reach_top(const vt_tree *t, int node);
 
+/* Give a node a new name, keeping its siblings in name order. 0 on no memory. */
+int  vt_tree_rename(vt_tree *t, int node, const char *name);
+
 /* File lists */
 int  vt_flist_add(vt_flist *fl, const char *name, const char *type, unsigned int ver,
                   const unsigned short fid[3], unsigned char flags, const vt_attrs *a);

@@ -1,0 +1,24 @@
+ VTREE   Point at the destination: DKA0:[USERS.IAIN]          24-OCT-2026 15:02
+┌─────────────────────────────────────────────────────────┬────────────────────┐
+│ DKA0:                                                   │ FILE               │
+│ ├─SYS0                                                  │  *.*;*             │
+│ ├─USERS                                                 │ DISK               │
+│ │ ├─GUEST                                               │  DKA0:             │
+│ │ ├─IAIN                                                │  VMSSYS            │
+│ │ │ ├─COM                                               │  Free    1,234,567 │
+│ │ │ └─VMS_VTREE                                         │ DIRECTORY          │
+│ │ ├─ODD (unchecked)                                     │  Files           5 │
+│ │ └─SYSTEM                                              │  Blocks         53 │
+│ └─VMS$COMMON                                            │ MATCHING           │
+│                                                         │  Files           5 │
+│                                                         │  Blocks         53 │
+├─────────────────────────────────────────────────────────┤ TAGGED             │
+│ LOGIN.COM;12   LOGIN.COM;11   MAKEFILE.;1               │  Files           0 │
+│ NOTES.TXT;1    SECRET.DAT;1                             │  Blocks          0 │
+│                                                         │                    │
+│                                                         │ IAIN [200,101]     │
+│                                                         │  Privs off         │
+│                                                         │                    │
+└─────────────────────────────────────────────────────────┴────────────────────┘
+ POINT  Up/Down Left/Right  + - *  open and close
+ COMMANDS  Return or Select: this directory   F10 back to the prompt

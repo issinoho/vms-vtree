@@ -13,9 +13,23 @@
 enum { M_TREE, M_FILES, M_VIEW, M_INFO, M_HELP, M_AVAIL };
 enum { L_DIR, L_BRANCH, L_SHOWALL };
 enum { S_NAME, S_TYPE, S_SIZE, S_DATE };
-enum { P_NONE, P_FILESPEC, P_LOG, P_FIND, P_SORT, P_QUIT };
+enum { P_NONE, P_FILESPEC, P_LOG, P_FIND, P_SORT, P_QUIT, P_ASK,
+       P_COPY_AS, P_COPY_TO, P_MOVE_TO, P_RENAME, P_MKDIR, P_RENDIR };
+enum { OP_COPY = 1, OP_MOVE, OP_RENAME };
 
 typedef struct { int node, idx; } vt_ref;    /* a file: t.n[node].files.f[idx] */
+
+/* A source file of an operation, held by value: the lists may be read again
+   while the user answers the prompts. */
+typedef struct {
+    int node;
+    unsigned short fid[3];
+    char path[VT_SPEC_MAX];
+    char name[VT_NAME_MAX], type[VT_NAME_MAX];
+    unsigned int ver;
+    unsigned long blocks;
+    char oname[VT_NAME_MAX], otype[VT_NAME_MAX];   /* filled when planned */
+} vt_src;
 
 #define VT_VIEW_STEP 32       /* a remembered position every 32 lines */
 
@@ -65,7 +79,7 @@ typedef struct {
     int pushback;             /* a key read while working, to be handled next */
 
     /* prompt */
-    int prompt; char prompt_label[48]; vt_edit edit;
+    int prompt; char prompt_label[256]; vt_edit edit;
 
     char msg[200]; int msg_err; int msg_progress;
 
@@ -74,6 +88,13 @@ typedef struct {
     vtp_device devs[64]; int ndevs, dcur;
 
     int progress_count;
+
+    /* an operation in progress (Phase 2) */
+    int op_kind, op_n;
+    vt_src *op_src;
+    char op_pattern[VT_SPEC_MAX];
+    int picking;                       /* choosing a destination in the tree */
+    struct { int mode, kind, list_node, fcur, ftop, tcur, ttop; } pick_save;
 } vt_app;
 
 /* Set up and log the start directory (spec, or the default directory if 0). */
@@ -104,6 +125,24 @@ void vt_view_fill(vt_app *a, int height, int width);
 void vt_info_build(vt_app *a, const vt_ref *r);
 void vt_help_build(vt_app *a, int for_mode);
 void vt_draw_title(vt_app *a, const char *what);
+void vt_rebuild_vis(vt_app *a);
+void vt_show_dir(vt_app *a, int node);
+void vt_set_cursor_node(vt_app *a, int node);
+unsigned int vt_scan_node(vt_app *a, int node);
+unsigned int vt_load_files(vt_app *a, int node);
+void vt_start_prompt(vt_app *a, int kind, const char *label, const char *initial);
+
+/* vt_ops.c: the operations that change files (Phase 2) */
+int  vt_ask(vt_app *a, const char *question, const char *choices, int def);
+void vt_op_start(vt_app *a, int kind, int tagged);  /* copy, move, rename: prompts */
+void vt_op_prompt_done(vt_app *a, int kind, const char *text);
+void vt_op_mkdir(vt_app *a);
+void vt_op_rendir(vt_app *a);
+void vt_op_edit(vt_app *a, const vt_ref *r);
+void vt_op_exec(vt_app *a);
+void vt_pick_start(vt_app *a);
+int  vt_pick_key(vt_app *a, int key);
+int  vt_find_node(vt_app *a, const char *dev, const char *dir);
 void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *l2);
 
 #endif

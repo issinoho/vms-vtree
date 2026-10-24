@@ -24,6 +24,10 @@ static salias aliases[8]; static int naliases;
 static vtp_device devs[8]; static int ndevs;
 static char def_dev[32], def_dir[VT_SPEC_MAX];
 static int keys[512], nkeys, kpos;
+static struct { char dev[32], dir[VT_SPEC_MAX]; int limit; } limits[8]; static int nlimits;
+static char fail_name[VT_NAME_MAX];
+static char logbuf[16384];
+static char spawned[VT_SPEC_MAX];
 static unsigned short next_fid = 100;
 
 void stub_reset(void)
@@ -32,6 +36,7 @@ void stub_reset(void)
     for (i = 0; i < nfiles; i++) free(files[i].content);
     free(files); files = 0; nfiles = capfiles = 0;
     naliases = ndevs = 0; nkeys = kpos = 0; next_fid = 100;
+    nlimits = 0; fail_name[0] = '\0'; logbuf[0] = '\0'; spawned[0] = '\0';
 }
 
 void stub_device(const char *dev, const char *label, unsigned int fb, unsigned int mb)
@@ -109,6 +114,7 @@ void stub_dir(const char *dev, const char *dir)
         if (!find(dev, parent, comp[i], ".DIR", 1)) {
             sfile *d = add(dev, parent, comp[i], ".DIR", 1);
             d->is_dir = 1; d->a.uchar = 1u << 13; d->a.rfm = VT_RFM_VAR; d->a.eof_blocks = 1;
+            d->a.prot = 0xEE88;          /* (RWE,RWE,RE,E) as CREATE/DIRECTORY gives */
             d->a.alloc_blocks = 1;
         }
         vt_dir_child(parent, comp[i], tmp, sizeof tmp);
@@ -363,3 +369,131 @@ unsigned int vtp_view_block(vtp_view *v, unsigned int vbn, unsigned char *buf, i
 
 void vtp_view_close(vtp_view *v) { free(v); }
 int vtp_is_eof(unsigned int st) { return st == STUB_EOF; }
+
+/* ---------- Phase 2 ---------- */
+
+void stub_limit(const char *dev, const char *dir, int limit)
+{
+    vt_strlcpy(limits[nlimits].dev, dev, sizeof limits[0].dev);
+    vt_strlcpy(limits[nlimits].dir, dir, sizeof limits[0].dir);
+    limits[nlimits++].limit = limit;
+}
+void stub_fail_copy(const char *name) { vt_strlcpy(fail_name, name, sizeof fail_name); }
+const char *stub_log(void) { return logbuf; }
+const char *stub_spawned(void) { return spawned; }
+
+/* "DEV:[DIR]NAME.TYPE;V" into its parts; ver -1 when absent. */
+static int split(const char *spec, char *dev, char *dir, char *name, char *type, int *ver)
+{
+    const char *colon = strchr(spec, ':'), *rb, *dot, *semi;
+    if (!colon || colon[1] != '[') return 0;
+    rb = strchr(colon, ']');
+    if (!rb) return 0;
+    snprintf(dev, 32, "%.*s", (int) (colon - spec + 1), spec);
+    snprintf(dir, VT_SPEC_MAX, "%.*s", (int) (rb - colon), colon + 1);
+    semi = strchr(rb, ';');
+    dot = strchr(rb, '.');
+    if (!dot || (semi && dot > semi)) return 0;
+    snprintf(name, VT_NAME_MAX, "%.*s", (int) (dot - rb - 1), rb + 1);
+    if (semi) { snprintf(type, VT_NAME_MAX, "%.*s", (int) (semi - dot), dot); *ver = atoi(semi + 1); }
+    else { vt_strlcpy(type, dot, VT_NAME_MAX); *ver = -1; }
+    return 1;
+}
+
+static int highest_of(const char *dev, const char *dir, const char *name, const char *type, int *count)
+{
+    int i, h = 0;
+    *count = 0;
+    for (i = 0; i < nfiles; i++)
+        if (!vt_strcasecmp(files[i].dev, dev) && !vt_strcasecmp(files[i].dir, dir)
+            && !vt_strcasecmp(files[i].name, name) && !vt_strcasecmp(files[i].type, type)) {
+            (*count)++;
+            if ((int) files[i].ver > h) h = (int) files[i].ver;
+        }
+    return h;
+}
+
+unsigned int vtp_copy(const char *src, const char *dst, char *result, int size)
+{
+    char dev[32], dir[VT_SPEC_MAX], name[VT_NAME_MAX], type[VT_NAME_MAX];
+    int ver, count, h;
+    sfile *f = by_path(src), *n, copy;
+    if (!f) return 0x910u;
+    if (!split(dst, dev, dir, name, type, &ver) || ver >= 0) return 0x1C0A2u;   /* syntax */
+    if (!dir_exists(dev, dir)) return STUB_DNF;
+    if (fail_name[0] && !vt_strcasecmp(fail_name, f->name)) { fail_name[0] = '\0'; return STUB_NOPRIV; }
+    copy = *f;                               /* add() may move the array */
+    h = highest_of(dev, dir, name, type, &count);
+    n = add(dev, dir, name, type, (unsigned int) h + 1);
+    n->a = copy.a;
+    n->a.prot = 0xFA00;                      /* the default, as COPY gives (N9) */
+    n->a.edt = 0;
+    n->a.rdt = vtp_now();
+    if (copy.content) {
+        n->len = copy.len;
+        n->content = (char *) malloc(copy.len + 1);
+        memcpy(n->content, copy.content, copy.len + 1);
+    }
+    snprintf(result, (size_t) size, "%s%s%s%s;%u", dev, dir, name, type, n->ver);
+    return VTP_OK;
+}
+
+unsigned int vtp_rename(const char *from, const char *to, char *result, int size)
+{
+    char dev[32], dir[VT_SPEC_MAX], name[VT_NAME_MAX], type[VT_NAME_MAX];
+    int ver;
+    sfile *f = by_path(from);
+    if (!f) return 0x910u;
+    if (!split(to, dev, dir, name, type, &ver) || ver < 0) return 0x1C0A2u;
+    if (vt_strcasecmp(dev, f->dev)) return 0x1C0B2u;                 /* other device */
+    if (!dir_exists(dev, dir)) return STUB_DNF;
+    if (find(dev, dir, name, type, (unsigned int) ver)) return STUB_FEX;
+    if (f->is_dir && (f->a.prot & 0x0080)) return 0x1C0F4u;      /* RMS$_RMV: no D */
+    vt_strlcpy(f->dir, dir, sizeof f->dir);
+    vt_strlcpy(f->name, name, sizeof f->name);
+    vt_strlcpy(f->type, type, sizeof f->type);
+    f->ver = (unsigned int) ver;
+    snprintf(result, (size_t) size, "%s%s%s%s;%d", dev, dir, name, type, ver);
+    return VTP_OK;
+}
+
+unsigned int vtp_mkdir(const char *dev, const char *dir)
+{
+    if (dir_exists(dev, dir)) return VTP_OK;
+    stub_dir(dev, dir);
+    return VTP_CREATED;
+}
+
+unsigned int vtp_versions(const char *dev, const char *dir, const char *name, const char *type,
+                          int *count, int *highest, int *limit)
+{
+    int i;
+    *highest = highest_of(dev, dir, name, type, count);
+    *limit = 0;
+    for (i = 0; i < nlimits; i++)
+        if (!vt_strcasecmp(limits[i].dev, dev) && !vt_strcasecmp(limits[i].dir, dir)) *limit = limits[i].limit;
+    return VTP_OK;
+}
+
+void vtp_log(const char *line)
+{
+    vt_strlcat(logbuf, line, sizeof logbuf);
+    vt_strlcat(logbuf, "\n", sizeof logbuf);
+}
+
+unsigned int vtp_spawn(const char *file)
+{
+    vt_strlcpy(spawned, file ? file : "DCL", sizeof spawned);
+    return VTP_OK;
+}
+
+unsigned int vtp_set_prot(const char *path, unsigned short prot)
+{
+    sfile *f = by_path(path);
+    if (!f) return 0x910u;
+    f->a.prot = prot;
+    return VTP_OK;
+}
+
+/* The tests queue their answers before the command, so nothing is thrown away. */
+void vtp_flush_keys(void) { }

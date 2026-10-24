@@ -95,7 +95,12 @@ The file window lists all versions (`*.*;*`) by default, as DIRECTORY does. A ke
 switches to "highest version only". A deletion takes the exact version selected unless
 the user chose "all versions".
 
-## D10. Destructive operations: preview, confirm, log (2026-10-24, proposed)
+## D10. Destructive operations: preview, confirm, log (2026-10-24, proposed; partly in use)
+
+In use since Phase 2: the operation log, Y/N questions defaulting to No, typeahead
+thrown away before each question (N12), skip-or-stop on a failure, and the
+owned-and-agreed rule for adding D to a directory (N11). The rest is for Phase 3.
+
 
 - Every delete, purge, overwrite, prune, protection or owner change first shows what it
   will do (count, blocks, the first names), then asks once: `Y` or `N`, default `N`.
@@ -127,3 +132,21 @@ on red. The values are from memory of XTree Gold's defaults and live in one plac
 DECterm, xterm and PuTTY show ANSI colour; a real VT220/VT320 ignores the colour
 parameters. `DEFINE VTREE$DISPLAY MONO` gives the monochrome rendition (bold,
 underline, reverse), which reads better on such a terminal.
+
+## D12. Copy behaves as DCL COPY does (2026-10-24)
+
+What a VMS user expects from "copy" is what COPY does (N9): contents, organisation,
+record attributes and creation date kept; the new file gets the default protection
+and owner and no ACL, a new highest version, and no `/NOBACKUP` or expiration date.
+Done as COPY does it, by block copy (N10), so indexed files, images and undefined
+formats come out identical. Considered: callable CONVERT (rewrites records, fails on
+UDF files), callable BACKUP (keeps security too, but heavy, and not what COPY means),
+spawning COPY (D6). Copying security as well can come with Phase 4.
+
+Phase 2 safeguards, so that nothing is lost:
+- A copy or move that would take a name past its version limit (RMS would delete
+  the oldest version) or past version 32767 is refused, before anything is done.
+- Several versions of one name are copied oldest first, so they keep their order.
+- Move and rename keep the version number; a clash is reported, never overwritten.
+- Moving between disks waits for Phase 3 (it needs a delete).
+- A failed copy leaves no partial file. Each change is logged (D10's log).

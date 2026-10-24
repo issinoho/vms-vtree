@@ -95,7 +95,15 @@ VMS platform:
 Exit: unit and snapshot tests on Linux; PTYDRIVE transcripts on both nodes; the user
 tries it on both nodes; D9 confirmed.
 
-## Phase 2: create, copy, rename, move (no data is lost)
+## Phase 2: create, copy, rename, move (no data is lost) (built and tested 2026-10-24)
+
+Status: done as below on x86 and IA64 (D12, N9-N12): make directory (M), rename
+directory (R, with the delete-access step of N11), copy (C / GOLD C, "as" pattern and
+"to" directory, Select/Tab points in the tree, a missing directory can be created),
+move within a disk (M / GOLD M, versions kept), rename (R / GOLD R), edit (E,
+VTREE$EDITOR), DCL subprocess (X), operation log, typeahead flushed before every
+question. Tests: `make test` (135 + 66), `t_copy.com` against DCL COPY, `p2_keys.txt`
+under PTYDRIVE on both nodes. Not done: cross-disk move (needs Phase 3's delete).
 
 Copy probe first (D6). Make directory; copy one, tagged, or to a directory picked in the
 tree, with an optional new name pattern (`*.BAK`); rename a file, tagged files with a

@@ -67,7 +67,14 @@ $! ---- VTREE under PTYDRIVE
 $ build = here - "]" + ".BUILD]"
 $ vtree :== $'build'vtree.exe
 $ drive := $'here'ptydrive.exe
+$! The operation log goes to the work directory, never to the user's SYS$LOGIN.
+$ if f$search("live.log") .nes. "" then delete/nolog live.log;*
+$ define vtree$log 'here'live.log
 $ write sys$output "==== privileges before: SYSPRV ", f$privilege("SYSPRV"), " READALL ", f$privilege("READALL")
 $ drive 'keys'
 $ write sys$output "==== privileges after: SYSPRV ", f$privilege("SYSPRV"), " READALL ", f$privilege("READALL")
+$ write sys$output "==== operation log"
+$ if f$search("live.log") .nes. "" then type live.log
+$ write sys$output "==== tree after"
+$ directory/size/date/prot [.live...]
 $ exit 1

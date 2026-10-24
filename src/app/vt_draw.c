@@ -45,11 +45,11 @@ void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *
 {
     vt_screen *s = &a->scr;
     int r1 = s->rows - 2, r2 = s->rows - 1;
-    if (a->prompt != P_NONE) {
+    if (a->prompt != P_NONE && !a->picking) {
         int n;
         vt_fill(s, r1, 0, s->cols, ' ', 0);
         n = vt_put(s, r1, 1, a->prompt_label, VT_A_BOLD, -1);
-        if (a->prompt == P_SORT || a->prompt == P_QUIT) {
+        if (a->prompt == P_SORT || a->prompt == P_QUIT || a->prompt == P_ASK) {
             s->cursor_on = 1; s->cursor_row = r1; s->cursor_col = 1 + n;
             menu_line(s, r2, "CHOOSE", "Press the letter of your choice", VT_A_REV);
             return;
@@ -61,7 +61,10 @@ void vt_draw_bottom(vt_app *a, const char *l1label, const char *l1, const char *
             vt_put(s, r1, 1 + n, a->edit.buf + start, 0, width);
             s->cursor_on = 1; s->cursor_row = r1; s->cursor_col = 1 + n + a->edit.pos - start;
         }
-        menu_line(s, r2, "EDIT", "Return accept   F10 cancel   Ctrl/U erase   Ctrl/H start   Ctrl/E end", VT_A_REV);
+        if (a->prompt == P_COPY_TO || a->prompt == P_MOVE_TO)
+            menu_line(s, r2, "EDIT", "Return accept   Select or Tab: point in the tree   F10 cancel   Ctrl/U erase", VT_A_REV);
+        else
+            menu_line(s, r2, "EDIT", "Return accept   F10 cancel   Ctrl/U erase   Ctrl/H start   Ctrl/E end", VT_A_REV);
         return;
     }
     if (a->msg[0]) {
@@ -286,22 +289,31 @@ static void draw_main(vt_app *a)
         vt_gfx(s, hs, 0, VT_G_LTEE, 0);
         vt_gfx(s, hs, cx, pw ? VT_G_RTEE : VT_G_RTEE, 0);
         draw_files(a, hs + 1, bot - 1, 1, cx - 1, 0);
+        if (a->picking) {
+            char t2[2 * VT_SPEC_MAX];
+            snprintf(t2, sizeof t2, "Point at the destination: %s", title);
+            vt_draw_title(a, t2);
+            vt_draw_bottom(a, "POINT", "Up/Down Left/Right  &+ &- &*  open and close",
+                           "Return or Select: this directory   F10 back to the prompt");
+        } else {
         vt_draw_title(a, title);
         if (a->gold)
-            vt_draw_bottom(a, "GOLD", "Log &whole disk   &Reread   &Sort   &Tag branch   &Untag branch   Up/Down top/bottom",
+            vt_draw_bottom(a, "GOLD", "&Log whole disk  &Sort  &Tag branch  &Untag branch  &W reread  Up/Down top/end",
                         "PF1 cancel GOLD");
         else
-            vt_draw_bottom(a, "DIR", "&Avail &Branch &Filespec &Info &Log &Showall &Tag &Untag  &+ &- &*  &; versions",
-                        "PF1 GOLD   Return files   Select tag   Help   F10 exit");
+            vt_draw_bottom(a, "DIR", "&Avail &Branch &Filespec &Info &Log &Makedir &Rename &Showall &Tag &Untag e&Xecute",
+                        "PF1 GOLD   Return files   + - * open/close   Help   F10 exit");
+        }
     } else {
         draw_files(a, top + 1, bot - 1, 1, cx - 1, 1);
         if (a->mode == M_FILES && a->nrefs) vt_ref_path(a, &a->refs[a->fcur], title, sizeof title);
         vt_draw_title(a, title);
         if (a->gold)
-            vt_draw_bottom(a, "GOLD", "&Reread   &Sort   &Tag all   &Untag all   Up/Down top/bottom", "PF1 cancel GOLD");
+            vt_draw_bottom(a, "GOLD", "&Copy &Move &Rename tagged  &Sort  &Tag all  &Untag all  &W reread",
+                           "PF1 cancel GOLD   Up/Down first/last");
         else
             vt_draw_bottom(a, a->kind == L_SHOWALL ? "SHOWALL" : a->kind == L_BRANCH ? "BRANCH" : "FILE",
-                        "&Filespec &Info &Tag &Untag &View  &= format  &; versions",
+                        "&Copy &Edit &Filespec &Info &Move &Rename &Tag &Untag &View e&Xecute  &= &;",
                         "PF1 GOLD   Return tree   Select tag   Help   F10 tree");
     }
 }

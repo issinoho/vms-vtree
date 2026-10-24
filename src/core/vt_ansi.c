@@ -105,12 +105,14 @@ void vt_ansi_render(const vt_screen *cur, vt_cell *prev, int colour, vt_emit_fn 
 
 void vt_ansi_begin(int colour, vt_emit_fn emit, void *ctx)
 {
-    const char *s = colour ? "\033[0;37;44m\033(B\033[?25l\033[H\033[2J" : "\033[0m\033(B\033[?25l\033[H\033[2J";
+    /* also the keypad in application mode, as SMG$ sets it (a subprocess may not) */
+    const char *s = colour ? "\033=\033[0;37;44m\033(B\033[?25l\033[H\033[2J"
+                           : "\033=\033[0m\033(B\033[?25l\033[H\033[2J";
     emit(ctx, s, (int) strlen(s));
 }
 
 void vt_ansi_end(vt_emit_fn emit, void *ctx)
 {
-    const char *s = "\033[0m\033(B\033[?25h\033[H\033[2J";
+    const char *s = "\033>\033[0m\033(B\033[?25h\033[H\033[2J";
     emit(ctx, s, (int) strlen(s));
 }

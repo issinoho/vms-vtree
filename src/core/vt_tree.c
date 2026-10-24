@@ -129,6 +129,25 @@ int vt_tree_within(const vt_tree *t, int a, int b)
     return 0;
 }
 
+int vt_tree_rename(vt_tree *t, int node, const char *name)
+{
+    int parent = t->n[node].parent, i, prev = -1, *link;
+    char *nn = dupstr(name);
+    if (!nn) return 0;
+    free(t->n[node].name);
+    t->n[node].name = nn;
+    if (parent < 0) return 1;
+    /* unlink, then insert again in order */
+    link = &t->n[parent].child;
+    while (*link != node) link = &t->n[*link].next;
+    *link = t->n[node].next;
+    for (i = t->n[parent].child; i >= 0 && vt_strcasecmp(t->n[i].name, name) < 0; i = t->n[i].next)
+        prev = i;
+    t->n[node].next = i;
+    if (prev < 0) t->n[parent].child = node; else t->n[prev].next = node;
+    return 1;
+}
+
 int vt_tree_reaches(const vt_tree *t, int a, int b)
 {
     for (; b >= 0; b = t->n[b].parent) {

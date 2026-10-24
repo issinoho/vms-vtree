@@ -4,6 +4,7 @@
    record and block reads for the viewer. Nothing here writes to a file. */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <rms.h>
 #include <starlet.h>
@@ -621,3 +622,266 @@ void vtp_view_close(vtp_view *v)
 }
 
 int vtp_is_eof(unsigned int st) { return st == RMS$_EOF; }
+
+/* ---------- Phase 2: copy, rename, make directory, versions, log, spawn ---------- */
+
+static unsigned int fat_blocks(const unsigned char *fat, unsigned int *ef, unsigned short *ffb)
+{
+    const unsigned short *w = (const unsigned short *) fat;
+    *ef = ((unsigned int) w[4] << 16) | w[5];
+    *ffb = w[6];
+    return (*ffb == 0 && *ef > 0) ? *ef - 1 : *ef;   /* blocks that hold data */
+}
+
+/* Block copy with the source's record attributes written over the new file's at the
+   end, as COPY does (N9). The new file is created as plain sequential/undefined with
+   UFO so RMS writes nothing into it; every block, an indexed file's prologue
+   included, comes from the source. */
+unsigned int vtp_copy(const char *src, const char *dst, char *result, int size)
+{
+    static char sesa[NAML$C_MAXRSS + 1], srsa[NAML$C_MAXRSS + 1];
+    static char desa[NAML$C_MAXRSS + 1], drsa[NAML$C_MAXRSS + 1];
+    static char buf[64 * 512];
+    struct FAB sf, df;
+    struct NAML sn, dn;
+    struct RAB sr;
+    struct XABDAT xd;
+    unsigned char fat[ATR$S_RECATTR];
+    unsigned int cdt[2] = { 0, 0 }, st, nblocks, vbn, ef;
+    unsigned short ffb, chan = 0, dchan, iosb[4];
+    atr_item atr[3];
+    struct fibdef fib;
+    struct dsc$descriptor_s fibd, dv;
+
+    naml_setup(&sf, &sn, src, sesa, srsa);
+    sf.fab$b_fac = FAB$M_GET | FAB$M_BIO;
+    sf.fab$b_shr = FAB$M_SHRGET;               /* nobody may be writing it meanwhile */
+    st = sys$open(&sf, 0, 0);
+    if (!(st & 1)) return st;
+    sr = cc$rms_rab;
+    sr.rab$l_fab = &sf;
+    sr.rab$l_rop = RAB$M_BIO;
+    st = sys$connect(&sr, 0, 0);
+    if (!(st & 1)) { sys$close(&sf, 0, 0); return st; }
+
+    dsc(&dv, (char *) &sn.naml$t_dvi[1], sn.naml$t_dvi[0]);
+    st = sys$assign(&dv, &chan, 0, 0);
+    if (st & 1) {
+        memset(&fib, 0, sizeof fib);
+        memcpy(&fib.fib$w_fid, sn.naml$w_fid, 6);
+        dsc(&fibd, (char *) &fib, sizeof fib);
+        atr[0].size = ATR$S_RECATTR; atr[0].type = ATR$C_RECATTR; atr[0].addr = fat;
+        atr[1].size = 8; atr[1].type = ATR$C_CREDATE; atr[1].addr = cdt;
+        atr[2].size = 0; atr[2].type = 0; atr[2].addr = 0;
+        st = sys$qiow(0, chan, IO$_ACCESS, (void *) iosb, 0, 0, &fibd, 0, 0, 0, atr, 0);
+        if (st & 1) st = iosb[0];
+        sys$dassgn(chan);
+    }
+    if (!(st & 1)) { sys$close(&sf, 0, 0); return st; }
+    nblocks = fat_blocks(fat, &ef, &ffb);
+
+    naml_setup(&df, &dn, dst, desa, drsa);
+    xd = cc$rms_xabdat;
+    memcpy(&xd.xab$q_cdt, cdt, 8);             /* COPY keeps the creation date */
+    df.fab$l_xab = (void *) &xd;
+    df.fab$l_fop = FAB$M_UFO;
+    df.fab$b_fac = FAB$M_PUT;
+    df.fab$b_org = FAB$C_SEQ;
+    df.fab$b_rfm = FAB$C_UDF;
+    df.fab$l_alq = nblocks;
+    st = sys$create(&df, 0, 0);
+    if (!(st & 1)) { sys$close(&sf, 0, 0); return st; }
+    dchan = (unsigned short) df.fab$l_stv;
+
+    for (vbn = 1; (st & 1) && vbn <= nblocks; ) {
+        unsigned int n = nblocks - vbn + 1, got;
+        if (n > 64) n = 64;
+        sr.rab$l_bkt = vbn;
+        sr.rab$l_ubf = buf;
+        sr.rab$w_usz = (unsigned short) (n * 512);
+        st = sys$read(&sr, 0, 0);
+        if (!(st & 1)) break;
+        got = sr.rab$w_rsz;
+        if (got == 0) { st = RMS$_EOF; break; }
+        if (got % 512) { memset(buf + got, 0, 512 - got % 512); got += 512 - got % 512; }
+        st = sys$qiow(0, dchan, IO$_WRITEVBLK, (void *) iosb, 0, 0, buf, got, vbn, 0, 0, 0);
+        if (st & 1) st = iosb[0];
+        vbn += got / 512;
+    }
+    if (st & 1) {
+        /* the source's attributes, with this file's own allocation */
+        unsigned short *w = (unsigned short *) fat;
+        w[2] = (unsigned short) (df.fab$l_alq >> 16);
+        w[3] = (unsigned short) (df.fab$l_alq & 0xFFFF);
+        atr[0].size = ATR$S_RECATTR; atr[0].type = ATR$C_RECATTR; atr[0].addr = fat;
+        atr[1].size = 0; atr[1].type = 0; atr[1].addr = 0;
+        st = sys$qiow(0, dchan, IO$_DEACCESS, (void *) iosb, 0, 0, 0, 0, 0, 0, atr, 0);
+        if (st & 1) st = iosb[0];
+    } else {
+        unsigned int keep = st;
+        sys$qiow(0, dchan, IO$_DEACCESS, (void *) iosb, 0, 0, 0, 0, 0, 0, 0, 0);
+        st = keep;
+    }
+    sys$dassgn(dchan);
+    sys$close(&sf, 0, 0);
+    drsa[dn.naml$l_long_result_size] = '\0';
+    if (!(st & 1)) {                           /* leave nothing half-copied behind */
+        struct FAB ef_ = cc$rms_fab;
+        struct NAML en;
+        static char eesa[NAML$C_MAXRSS + 1];
+        naml_setup(&ef_, &en, drsa, eesa, 0);
+        sys$erase(&ef_, 0, 0);
+        return st;
+    }
+    vt_strlcpy(result, drsa, (size_t) size);
+    return SS$_NORMAL;
+}
+
+unsigned int vtp_rename(const char *from, const char *to, char *result, int size)
+{
+    static char oesa[NAML$C_MAXRSS + 1], orsa[NAML$C_MAXRSS + 1];
+    static char nesa[NAML$C_MAXRSS + 1], nrsa[NAML$C_MAXRSS + 1];
+    struct FAB of, nf;
+    struct NAML on, nn;
+    unsigned int st;
+    naml_setup(&of, &on, from, oesa, orsa);
+    naml_setup(&nf, &nn, to, nesa, nrsa);
+    st = sys$rename(&of, 0, 0, &nf);
+    if (!(st & 1)) return st;
+    nrsa[nn.naml$l_long_result_size] = '\0';
+    vt_strlcpy(result, nrsa, (size_t) size);
+    return st;
+}
+
+unsigned int vtp_mkdir(const char *dev, const char *dir)
+{
+    char spec[VT_SPEC_MAX * 2];
+    struct dsc$descriptor_s d;
+    snprintf(spec, sizeof spec, "%s%s", dev, dir);
+    dsc(&d, spec, (unsigned short) strlen(spec));
+    return lib$create_dir(&d, 0, 0, 0, 0, 0);
+}
+
+typedef struct { int count, highest; } vcount;
+static int vcount_cb(void *ctx, const vtp_entry *e)
+{
+    vcount *c = (vcount *) ctx;
+    c->count++;
+    if ((int) e->ver > c->highest) c->highest = (int) e->ver;
+    return 0;
+}
+
+unsigned int vtp_versions(const char *dev, const char *dir, const char *name, const char *type,
+                          int *count, int *highest, int *limit)
+{
+    char pat[VT_NAME_MAX * 2 + 4], spec[VT_SPEC_MAX * 3];
+    static char esa[NAML$C_MAXRSS + 1];
+    vcount c;
+    unsigned int st;
+    struct FAB fab;
+    struct NAML naml;
+    unsigned short chan = 0, iosb[4], back[3];
+    struct dsc$descriptor_s dv;
+
+    c.count = 0; c.highest = 0;
+    snprintf(pat, sizeof pat, "%s%s;*", name, type);
+    st = vtp_list(dev, dir, pat, 0, vcount_cb, &c);
+    if (!(st & 1) && st != VTP_OK) return st;
+    *count = c.count; *highest = c.highest; *limit = 0;
+
+    /* The limit: the existing entry's (FIB$W_VERLIMIT from a lookup), else the
+       directory's default (its FAT$W_VERSIONS). */
+    snprintf(spec, sizeof spec, "%s%s%s%s;", dev, dir, name, type);
+    naml_setup(&fab, &naml, spec, esa, 0);
+    st = sys$parse(&fab, 0, 0);
+    if (!(st & 1)) return st;
+    dsc(&dv, (char *) &naml.naml$t_dvi[1], naml.naml$t_dvi[0]);
+    st = sys$assign(&dv, &chan, 0, 0);
+    if (st & 1) {
+        struct fibdef fib;
+        struct dsc$descriptor_s fibd, nd;
+        char nm[VT_NAME_MAX * 2 + 4];
+        memset(&fib, 0, sizeof fib);
+        memcpy(&fib.fib$w_did, naml.naml$w_did, 6);
+        dsc(&fibd, (char *) &fib, sizeof fib);
+        snprintf(nm, sizeof nm, "%s%s;0", name, type);
+        dsc(&nd, nm, (unsigned short) strlen(nm));
+        if (c.count && (sys$qiow(0, chan, IO$_ACCESS, (void *) iosb, 0, 0, &fibd, &nd, 0, 0, 0, 0) & 1)
+            && (iosb[0] & 1)) {
+            *limit = fib.fib$w_verlimit;
+        } else {
+            unsigned int uchar;
+            vt_attrs a;
+            if (read_attrs(chan, naml.naml$w_did, 1, &a, &uchar, back) & 1) *limit = a.versions;
+        }
+        sys$dassgn(chan);
+    }
+    naml.naml$b_nop |= NAML$M_SYNCHK;
+    sys$parse(&fab, 0, 0);
+    return SS$_NORMAL;
+}
+
+void vtp_log(const char *line)
+{
+    const char *name = getenv("VTREE$LOG");
+    FILE *f = fopen(name && *name ? name : "SYS$LOGIN:VTREE.LOG", "a");
+    if (!f) return;
+    fprintf(f, "%s\n", line);
+    fclose(f);
+}
+
+unsigned int vtp_spawn(const char *file)
+{
+    char lnm[40], cmd[300];
+    const char *editor = getenv("VTREE$EDITOR");
+    struct dsc$descriptor_s dl, dv, dt, dc, dp;
+    unsigned int st, status = 0;
+    int have_lnm = 0;
+
+    /* The file goes to the subprocess as a job logical name, so no file name is
+       ever written into a command line (D6). */
+    sprintf(lnm, "VTREE$FILE_%X", (unsigned int) getpid());
+    dsc(&dl, lnm, (unsigned short) strlen(lnm));
+    dsc(&dt, "LNM$JOB", 7);
+    if (file) {
+        dsc(&dv, file, (unsigned short) strlen(file));
+        st = lib$set_logical(&dl, &dv, &dt, 0, 0);
+        if (!(st & 1)) return st;
+        have_lnm = 1;
+        snprintf(cmd, sizeof cmd, "%s %s", editor && *editor ? editor : "EDIT/TPU", lnm);
+    }
+    vt_ansi_end(tt_write, 0);
+    smg$disable_broadcast_trapping(&pb);
+    dsc(&dc, cmd, (unsigned short) strlen(cmd));
+    dsc(&dp, "VTREE_$ ", 8);
+    if (!file) {
+        static const char hello[] = "\r\nVTREE: a DCL subprocess. LOGOUT brings you back.\r\n";
+        tt_write(0, hello, (int) sizeof hello - 1);
+    }
+    st = lib$spawn(file ? &dc : 0, 0, 0, 0, 0, 0, &status, 0, 0, 0, &dp, 0, 0);
+    if (have_lnm) lib$delete_logical(&dl, &dt);
+    smg$set_broadcast_trapping(&pb, 0, 0);
+    vt_ansi_begin(colour, tt_write, 0);
+    free(shown); shown = 0;                    /* the next draw sends the whole screen */
+    if (!(st & 1)) return st;
+    return (status & 1) || !file ? SS$_NORMAL : status;
+}
+
+unsigned int vtp_set_prot(const char *path, unsigned short prot)
+{
+    struct dsc$descriptor_s cls, obj;
+    unsigned int p = prot;
+    unsigned short pl = 0;
+    ile3 it[2];
+    dsc(&cls, "FILE", 4);
+    dsc(&obj, path, (unsigned short) strlen(path));
+    ile(&it[0], OSS$_PROTECTION, &p, 2, &pl);     /* 2 bytes, not 4 (N4) */
+    memset(&it[1], 0, sizeof it[1]);
+    return sys$set_security(&cls, &obj, 0, 0, it, 0, 0);
+}
+
+void vtp_flush_keys(void)
+{
+    int n = 0;
+    while (started && n++ < 512 && vtp_key(0) != VK_TIMEOUT) ;
+}

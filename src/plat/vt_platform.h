@@ -98,4 +98,30 @@ unsigned int vtp_view_block(vtp_view *v, unsigned int vbn, unsigned char *buf, i
 void vtp_view_close(vtp_view *v);
 int vtp_is_eof(unsigned int status);
 
+/* ---------- Phase 2: changes that lose nothing ---------- */
+
+/* Copy as DCL COPY does (N9, D12): contents, organisation, record attributes and
+   creation date; the new file gets the default protection and owner and no ACL.
+   dst is "dev:[dir]name.type" without a version: a new highest version is made.
+   On failure nothing is left behind. result: the new file's full specification. */
+unsigned int vtp_copy(const char *src, const char *dst, char *result, int size);
+/* Rename (or move within one disk). to includes the version to give it. */
+unsigned int vtp_rename(const char *from, const char *to, char *result, int size);
+/* Create a directory (and any missing parents). VTP_CREATED if it was made. */
+#define VTP_CREATED 0x691u            /* SS$_CREATED */
+unsigned int vtp_mkdir(const char *dev, const char *dir);
+/* Versions of dev dir name.type: how many exist, the highest number, and the
+   version limit a new version would meet (0 = none). */
+unsigned int vtp_versions(const char *dev, const char *dir, const char *name, const char *type,
+                          int *count, int *highest, int *limit);
+/* Set a file's protection word (S,O,G,W nibbles; a set bit denies R,W,E,D). */
+unsigned int vtp_set_prot(const char *path, unsigned short prot);
+/* Throw away keys typed ahead, so that they can never answer a question. */
+void vtp_flush_keys(void);
+/* Append one line to the operation log (VTREE$LOG, default SYS$LOGIN:VTREE.LOG). */
+void vtp_log(const char *line);
+/* Hand the terminal to a subprocess and take it back: the editor on file
+   (VTREE$EDITOR, default EDIT/TPU), or an interactive DCL when file is 0. */
+unsigned int vtp_spawn(const char *file);
+
 #endif

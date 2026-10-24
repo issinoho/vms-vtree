@@ -1,0 +1,34 @@
+# PTYDRIVE script for Phase 2 (run by test_live.com with this file as P1).
+2 dcl | set terminal/width=80/page=24\r
+5 start | vtree [.live]\r
+2 mkdir prompt | m
+3 mkdir | NEWDIR\r
+2 rename dir prompt | r
+3 rename dir | \x15RENAMED\r
+3 allow delete | y
+2 to live | \e[D
+2 files | \r
+2 long format | =
+2 down to notes;2 | \e[B\e[B
+2 copy as | c
+2 as bak | \x15*.BAK\r
+2 point | \e[4~
+2 point down | \e[B
+2 pointed | \r
+4 copied | \r
+2 move prompt | m
+4 moved | \x15[.LIVE.GAMMA]\r
+2 tag two | \eOP\e[At\e[Bt
+2 gold copy | \eOPc
+2 as all | \r
+2 to renamed | \x15[.LIVE.RENAMED]\r
+4 confirm | y
+2 to notes;1 | \eOP\e[B
+6 edit | e
+2 type | added by the VTREE test
+6 exit editor | \x1a
+6 subprocess | x
+3 dcl in sub | show default\r
+5 logout | logout\r
+2 to tree | \r
+3 quit | \e[21~

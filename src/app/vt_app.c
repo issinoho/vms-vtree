@@ -46,7 +46,7 @@ void vt_progress(vt_app *a, const char *text)
 
 /* ---------- the tree ---------- */
 
-static void rebuild_vis(vt_app *a)
+void vt_rebuild_vis(vt_app *a)
 {
     int keep = a->nvis && a->tcur < a->nvis ? a->vis[a->tcur] : -1, i;
     int n = vt_tree_visible(&a->t, a->vis, a->capvis);
@@ -71,7 +71,7 @@ int vt_cur_node(vt_app *a)
     return a->nvis ? a->vis[a->tcur] : -1;
 }
 
-static void show_dir(vt_app *a, int node)
+void vt_show_dir(vt_app *a, int node)
 {
     a->kind = L_DIR;
     a->list_node = node;
@@ -80,13 +80,13 @@ static void show_dir(vt_app *a, int node)
     a->pending_load = node >= 0 && !a->t.n[node].files.loaded;
 }
 
-static void set_cursor_node(vt_app *a, int node)
+void vt_set_cursor_node(vt_app *a, int node)
 {
     int i;
-    rebuild_vis(a);
+    vt_rebuild_vis(a);
     for (i = 0; i < a->nvis; i++) if (a->vis[i] == node) { a->tcur = i; break; }
     a->tjump = 1;
-    show_dir(a, vt_cur_node(a));
+    vt_show_dir(a, vt_cur_node(a));
 }
 
 typedef struct { vt_app *a; int node; int count; } scan_ctx;
@@ -102,7 +102,7 @@ static int scan_cb(void *vctx, const vtp_entry *e)
 }
 
 /* Read a node's subdirectories (once). Returns the status. */
-static unsigned int scan_node(vt_app *a, int node)
+unsigned int vt_scan_node(vt_app *a, int node)
 {
     char dev[VT_SPEC_MAX], dir[VT_SPEC_MAX];
     scan_ctx c;
@@ -133,7 +133,7 @@ static int scan_branch(vt_app *a, int start, int open)
         int n = stack[--sp], c;
         if (n != start && (a->t.n[n].flags & VT_N_CLOSED)) continue;
         if (!(a->t.n[n].flags & VT_N_SCANNED)) {
-            scan_node(a, n);
+            vt_scan_node(a, n);
             if (++done % 25 == 0) {
                 char m[80];
                 sprintf(m, "Reading directories: %d   (any key stops)", done);
@@ -186,7 +186,7 @@ static int files_cb(void *vctx, const vtp_entry *e)
    reread for files whose file ID is still there. */
 static int quiet_errors, quiet_failed;
 
-static unsigned int load_files(vt_app *a, int node)
+unsigned int vt_load_files(vt_app *a, int node)
 {
     char dev[VT_SPEC_MAX], dir[VT_SPEC_MAX];
     files_ctx c;
@@ -227,7 +227,7 @@ static unsigned int load_files(vt_app *a, int node)
 
 static int ensure_files(vt_app *a, int node)
 {
-    if (!a->t.n[node].files.loaded) load_files(a, node);
+    if (!a->t.n[node].files.loaded) vt_load_files(a, node);
     return a->pushback == VK_NONE;
 }
 
@@ -323,7 +323,7 @@ static int load_list(vt_app *a)
     quiet_errors = 1; quiet_failed = 0;
     for (node = 0; node < a->t.count; node++) {
         if (!list_includes(a, node) || a->t.n[node].files.loaded) continue;
-        load_files(a, node);
+        vt_load_files(a, node);
         if (++n % 10 == 0) {
             char m[80];
             sprintf(m, "Reading files of directory %d   (any key stops)", n);
@@ -359,7 +359,7 @@ static void log_spec(vt_app *a, const char *spec)
     n = vt_dir_split(dir, comp, 64);
     for (i = 0; i < n; i++) {
         int c;
-        scan_node(a, node);
+        vt_scan_node(a, node);
         c = vt_tree_find_child(&a->t, node, comp[i]);
         /* The parent can't be listed, so this entry's back-link is unchecked. */
         if (c < 0) c = vt_tree_child(&a->t, node, comp[i], 0, 2);
@@ -367,9 +367,9 @@ static void log_spec(vt_app *a, const char *spec)
         a->t.n[node].flags |= VT_N_OPEN;
         node = c;
     }
-    scan_node(a, node);
+    vt_scan_node(a, node);
     if (a->t.n[node].child >= 0) a->t.n[node].flags |= VT_N_OPEN;
-    set_cursor_node(a, node);
+    vt_set_cursor_node(a, node);
     if (a->t.n[node].flags & VT_N_ERROR) vt_status_msg(a, dir, a->t.n[node].scan_status);
 }
 
@@ -390,6 +390,7 @@ int vt_app_init(vt_app *a, const char *spec, int rows, int cols)
 
 void vt_app_free(vt_app *a)
 {
+    free(a->op_src);
     vt_view_close(a);
     vt_text_free(a);
     vt_tree_free(&a->t);
@@ -427,7 +428,7 @@ void vt_text_add(vt_app *a, const char *line)
 
 /* ---------- prompts ---------- */
 
-static void start_prompt(vt_app *a, int kind, const char *label, const char *initial)
+void vt_start_prompt(vt_app *a, int kind, const char *label, const char *initial)
 {
     a->prompt = kind;
     vt_strlcpy(a->prompt_label, label, sizeof a->prompt_label);
@@ -452,6 +453,10 @@ static void prompt_key(vt_app *a, int key)
         a->refs_dirty = 1;
         return;
     }
+    if ((kind == P_COPY_TO || kind == P_MOVE_TO) && (key == VK_SELECT || key == VK_TAB)) {
+        vt_pick_start(a);                          /* point at it in the tree */
+        return;
+    }
     r = vt_edit_key(&a->edit, key);
     if (r == VT_EDIT_MORE) return;
     a->prompt = P_NONE;
@@ -472,6 +477,12 @@ static void prompt_key(vt_app *a, int key)
         vt_strlcpy(a->view.find, a->edit.buf, sizeof a->view.find);
         vt_view_key(a, VK_PF3);
         break;
+    case P_COPY_AS: case P_COPY_TO: case P_MOVE_TO: case P_RENAME: case P_MKDIR: case P_RENDIR: {
+        char text[VT_SPEC_MAX];
+        vt_strlcpy(text, a->edit.buf, sizeof text);
+        vt_op_prompt_done(a, kind, text);
+        break;
+    }
     default: break;
     }
 }
@@ -510,23 +521,23 @@ static void tree_key(vt_app *a, int key, int gold)
     case VK_PREV: a->tcur = a->tcur > page ? a->tcur - page : 0; break;
     case VK_NEXT: a->tcur = a->tcur + page < a->nvis ? a->tcur + page : a->nvis - 1; break;
     case VK_LEFT:
-        if (a->t.n[node].parent >= 0) { set_cursor_node(a, a->t.n[node].parent); return; }
+        if (a->t.n[node].parent >= 0) { vt_set_cursor_node(a, a->t.n[node].parent); return; }
         break;
     case VK_RIGHT: case '+':
-        scan_node(a, node);
+        vt_scan_node(a, node);
         if (a->t.n[node].flags & VT_N_ERROR) { vt_status_msg(a, a->t.n[node].name, a->t.n[node].scan_status); break; }
         if (a->t.n[node].child < 0) { if (key == '+') vt_set_msg(a, 0, "No subdirectories"); break; }
         a->t.n[node].flags |= VT_N_OPEN;
-        rebuild_vis(a);
-        if (key == VK_RIGHT) set_cursor_node(a, a->t.n[node].child);
+        vt_rebuild_vis(a);
+        if (key == VK_RIGHT) vt_set_cursor_node(a, a->t.n[node].child);
         return;
     case '-':
         a->t.n[node].flags &= (unsigned char) ~VT_N_OPEN;
-        rebuild_vis(a);
+        vt_rebuild_vis(a);
         return;
     case '*':
         scan_branch(a, node, 1);
-        rebuild_vis(a);
+        vt_rebuild_vis(a);
         return;
     case VK_RETURN: case VK_ENTER:
         ensure_files(a, node);
@@ -539,7 +550,7 @@ static void tree_key(vt_app *a, int key, int gold)
         a->refs_dirty = 1; a->mode = M_FILES;
         return;
     case 'S': case 's':
-        if (gold) { start_prompt(a, P_SORT, "Sort by: N name  T type  S size  D date  R reverse", ""); return; }
+        if (gold) { vt_start_prompt(a, P_SORT, "Sort by: N name  T type  S size  D date  R reverse", ""); return; }
         a->kind = L_SHOWALL; a->list_node = node; a->fcur = a->ftop = 0;
         load_list(a);
         a->refs_dirty = 1; a->mode = M_FILES;
@@ -549,13 +560,13 @@ static void tree_key(vt_app *a, int key, int gold)
             int r = node;
             while (a->t.n[r].parent >= 0) r = a->t.n[r].parent;
             scan_branch(a, r, 1);
-            rebuild_vis(a);
+            vt_rebuild_vis(a);
             return;
         }
         { char dev[VT_SPEC_MAX], dir[VT_SPEC_MAX], both[2 * VT_SPEC_MAX];
           vt_tree_spec(&a->t, node, dev, sizeof dev, dir, sizeof dir);
           snprintf(both, sizeof both, "%s%s", dev, dir);
-          start_prompt(a, P_LOG, "Log disk or directory: ", both); }
+          vt_start_prompt(a, P_LOG, "Log disk or directory: ", both); }
         return;
     case 'A': case 'a': open_avail(a); return;
     case 'T': case 't': case 'U': case 'u': case VK_SELECT: {
@@ -564,23 +575,26 @@ static void tree_key(vt_app *a, int key, int gold)
         if (gold) {
             if (!scan_branch(a, node, 0)) return;
             a->kind = L_BRANCH; a->list_node = node;
-            if (!load_list(a)) { show_dir(a, node); return; }
+            if (!load_list(a)) { vt_show_dir(a, node); return; }
         } else if (!ensure_files(a, node)) return;
         vt_rebuild_refs(a);
         n = tag_refs(a, on);
         vt_set_msg(a, 0, "%s %ld file%s%s", on ? "Tagged" : "Untagged", n, n == 1 ? "" : "s",
                    gold ? " in the branch" : "");
-        if (gold) show_dir(a, node);
+        if (gold) vt_show_dir(a, node);
         a->refs_dirty = 1;
         return;
     }
-    case 'R': case 'r':
-        if (gold) { a->t.n[node].flags &= (unsigned char) ~VT_N_SCANNED; load_files(a, node); rebuild_vis(a); }
+    case 'W': case 'w':
+        if (gold) { a->t.n[node].flags &= (unsigned char) ~VT_N_SCANNED; vt_load_files(a, node); vt_rebuild_vis(a); }
         return;
+    case 'M': case 'm': if (!gold) vt_op_mkdir(a); return;
+    case 'R': case 'r': if (!gold) vt_op_rendir(a); return;
+    case 'X': case 'x': vt_op_exec(a); return;
     default: return;
     }
     moved = a->tcur != old;
-    if (moved) show_dir(a, vt_cur_node(a));
+    if (moved) vt_show_dir(a, vt_cur_node(a));
 }
 
 /* ---------- keys: file window ---------- */
@@ -601,7 +615,7 @@ static void file_key(vt_app *a, int key, int gold)
     case VK_NEXT: a->fcur = a->fcur + page < a->nrefs ? a->fcur + page : (a->nrefs ? a->nrefs - 1 : 0); break;
     case VK_RETURN: case VK_ENTER: case VK_F10: case VK_CTRL_Z:
         a->mode = M_TREE;
-        show_dir(a, vt_cur_node(a));
+        vt_show_dir(a, vt_cur_node(a));
         break;
     case 'T': case 't': case 'U': case 'u': case VK_SELECT: {
         int on = !(key == 'U' || key == 'u');
@@ -621,11 +635,16 @@ static void file_key(vt_app *a, int key, int gold)
     case 'I': case 'i': if (r) { vt_info_build(a, r); a->back_mode = M_FILES; a->mode = M_INFO; } break;
     case '=': a->fmt = !a->fmt; a->ftop = 0; break;
     case 'S': case 's':
-        if (gold) start_prompt(a, P_SORT, "Sort by: N name  T type  S size  D date  R reverse", "");
+        if (gold) vt_start_prompt(a, P_SORT, "Sort by: N name  T type  S size  D date  R reverse", "");
         break;
-    case 'R': case 'r':
-        if (gold && r) { int n = r->node; load_files(a, n); }
+    case 'W': case 'w':
+        if (gold && r) { int n = r->node; vt_load_files(a, n); }
         break;
+    case 'C': case 'c': vt_op_start(a, OP_COPY, gold); break;
+    case 'M': case 'm': vt_op_start(a, OP_MOVE, gold); break;
+    case 'R': case 'r': vt_op_start(a, OP_RENAME, gold); break;
+    case 'E': case 'e': if (r && !gold) vt_op_edit(a, r); break;
+    case 'X': case 'x': vt_op_exec(a); break;
     default: break;
     }
 }
@@ -650,7 +669,7 @@ static void dir_info(vt_app *a, int node)
         return;
     }
     /* The directory file is an entry of its parent's file list. */
-    if (!a->t.n[parent].files.loaded) load_files(a, parent);
+    if (!a->t.n[parent].files.loaded) vt_load_files(a, parent);
     fl = &a->t.n[parent].files;
     for (i = 0; i < fl->n; i++)
         if ((fl->f[i].flags & VT_F_DIR) && fl->f[i].ver == 1
@@ -728,6 +747,15 @@ void vt_app_key(vt_app *a, int key)
 {
     int gold = a->gold;
     a->msg[0] = '\0';
+    if (a->picking) {
+        int r = vt_pick_key(a, key);
+        if (r == 0) {
+            if (key == VK_PF1) { a->gold = !a->gold; return; }
+            a->gold = 0;
+            tree_key(a, key, gold);
+        }
+        return;
+    }
     if (a->prompt != P_NONE) { prompt_key(a, key); return; }
     if (key == VK_CTRL_W) { vtp_repaint(); return; }
     if (a->mode == M_VIEW) { vt_view_key(a, key); return; }   /* it has its own GOLD */
@@ -746,7 +774,7 @@ void vt_app_key(vt_app *a, int key)
         a->back_mode = a->mode; a->mode = M_HELP;
         return;
     case VK_FIND: case 'F': case 'f':
-        start_prompt(a, P_FILESPEC, "Filespec: ", a->filter.text);
+        vt_start_prompt(a, P_FILESPEC, "Filespec: ", a->filter.text);
         return;
     case ';':
         a->highest_only = !a->highest_only;
@@ -754,7 +782,7 @@ void vt_app_key(vt_app *a, int key)
         vt_set_msg(a, 0, a->highest_only ? "Highest versions only" : "All versions");
         return;
     case 'Q': case 'q':
-        start_prompt(a, P_QUIT, "Quit VTREE?  Y yes  N no", "");
+        vt_start_prompt(a, P_QUIT, "Quit VTREE?  Y yes  N no", "");
         return;
     case VK_F10: case VK_CTRL_Z:
         if (a->mode == M_TREE) { a->quit = 1; return; }
@@ -774,7 +802,7 @@ int vt_app_idle(vt_app *a)
     if (a->pending_load && a->list_node >= 0 && (a->mode == M_TREE || a->mode == M_FILES)) {
         a->pending_load = 0;
         if (!a->t.n[a->list_node].files.loaded) {
-            load_files(a, a->list_node);
+            vt_load_files(a, a->list_node);
             if (a->msg_progress) { a->msg[0] = '\0'; a->msg_progress = 0; }
             return 1;
         }

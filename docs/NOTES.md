@@ -98,3 +98,46 @@ but not read it. With VTREE's privileges off (D5), `IO$_ACCESS` on its alias
 by name. On x86 the MFD itself can't be listed without privileges, so the path to
 the user's directory is made from the names in the start specification.
 VTREE marks such entries "(unchecked)" and treats them as aliases (D8).
+
+## N9. What DCL COPY keeps (2026-10-24, x86 E9.2-4)
+
+`probes/copy_setup.com` makes a VFC file, a variable file with an ACL, protection
+(S:RWED,O:RWED,G:R,W:R) and an expiration date, a Stream_LF file with `/NOBACKUP`, an
+indexed file, an image and an empty file; `COPY [.SRC]*.*;* [.DCL]`, then
+`probes/copy_compare.com` compares `DIRECTORY/FULL` and MD5 checksums. COPY keeps the
+contents (all checksums equal), organisation, record format and attributes, longest
+record and the **creation date**. It does not keep: protection (the copy gets the
+default, here (S:RWED,O:RWED,G:RE,W)), the ACL, the expiration date, `/NOBACKUP`; the
+revision date is the time of the copy and the revision count goes up by one.
+
+## N10. VTREE's copy matches COPY; version limits (2026-10-24, x86 and IA64)
+
+`tests/vms/t_copy.c` with `vtp_copy` (raw block copy into a file created with UFO,
+then the source's 32-byte record attributes written at deaccess with this file's own
+allocation, D12): on all six test files the MD5 checksums, organisation, record
+attributes and creation date equal the source's, and protection, ACL and expiration
+come out as with DCL COPY (N9). The one difference: COPY's copy shows the source's
+revision count plus one, VTREE's shows 1.
+
+Version limits: `SET DIRECTORY/VERSION_LIMIT` sets a directory's default (the
+directory file's `FAT$W_VERSIONS`); `SET FILE/VERSION_LIMIT` on a `.DIR` file only
+limits that entry. A lookup with `IO$_ACCESS` and a FIB returns an existing entry's
+limit in `FIB$W_VERLIMIT`; 32767 there means no limit. With a default of 3, a new
+entry got 3.
+
+## N11. Renaming a directory needs delete access on its .DIR file (2026-10-24, both)
+
+`p2_keys.txt`: `$RENAME` of a just-created `NEWDIR.DIR;1` fails with `%RMS-F-RMV`
+("ACP remove function failed"): a new directory file has no D for anyone (x86
+`(RWE,RWE,RE,E)`; on IA64 it takes its parent's, here `(RWE,RWE,RE,RE)`), and the
+rename removes the old entry. With O:D added it works; VTREE adds it only for the
+rename, for a directory the user owns, after asking, and puts the old protection
+back (logged as PROT, RENAME, PROT). Checked: the renamed directory's protection
+equals its untouched siblings' on both nodes.
+
+## N12. Typeahead answered a question (2026-10-24, x86)
+
+An early `p2_keys.txt` was a step out: the "y" in text meant for the editor answered
+a Y/N confirmation. `vt_ask` now throws away pending keystrokes before every question
+(`vtp_flush_keys`); in the stub, where the tests queue their answers in advance,
+it does nothing.

@@ -181,11 +181,138 @@ int main(int argc, char **argv)
     CHECK(a.quit);
     vt_app_free(&a);
 
+    /* 9. Phase 2: copy, move, rename, make directory, edit, subprocess. */
+    world();
+    stub_limit("DKA0:", "[USERS.IAIN.COM]", 2);
+    stub_file("DKA0:", "[USERS.IAIN.COM]", "LOGIN.COM;1", 1, 0, 0);
+    CHECK(vt_app_init(&a, 0, 24, 80));
+    vtp_start(&a.sess);
+    while (vt_app_idle(&a)) continue;
+    {   /* copy LOGIN.COM;12 as *.BAK into VMS_VTREE, pointing at it in the tree */
+        int k[] = { VK_RETURN, 'C', VK_CTRL_U, '*', '.', 'B', 'A', 'K', VK_RETURN, VK_SELECT, VK_NONE };
+        keys(&a, k);
+        CHECK(a.picking);
+        snap(&a, "12_pick");
+    }
+    {
+        int k[] = { VK_DOWN, VK_DOWN, VK_RETURN, VK_NONE };   /* COM, then VMS_VTREE */
+        keys(&a, k);
+        CHECK(!a.picking && a.prompt == P_COPY_TO);
+        CHECK(strstr(a.edit.buf, "[USERS.IAIN.VMS_VTREE]") != 0);
+    }
+    { int k[] = { VK_RETURN, VK_NONE }; keys(&a, k); }
+    CHECK(strstr(stub_log(), "COPY   DKA0:[USERS.IAIN]LOGIN.COM;12 -> DKA0:[USERS.IAIN.VMS_VTREE]LOGIN.BAK;1") != 0);
+    CHECK(strstr(a.msg, "Copy: 1 done") != 0);
+    snap(&a, "13_copied");
+
+    /* both LOGIN.COM versions, tagged, copied to a new directory: oldest first, so
+       ;11 becomes ;1 and ;12 becomes ;2; the new directory is asked about first */
+    {
+        int k[] = { VK_PF1, VK_UP, 'T', 'T', VK_PF1, 'C', VK_RETURN, VK_CTRL_U, 'D', 'K', 'A', '0', ':', '[',
+                    'U', 'S', 'E', 'R', 'S', '.', 'I', 'A', 'I', 'N', '.', 'N', 'E', 'W', ']', VK_NONE };
+        int ans[] = { 'Y', 'Y', VK_NONE };              /* create it; copy 2 files */
+        keys(&a, k);
+        stub_keys(ans);
+        { int k2[] = { VK_RETURN, VK_NONE }; keys(&a, k2); }
+        CHECK(strstr(stub_log(), "LOGIN.COM;11 -> DKA0:[USERS.IAIN.NEW]LOGIN.COM;1") != 0);
+        CHECK(strstr(stub_log(), "LOGIN.COM;12 -> DKA0:[USERS.IAIN.NEW]LOGIN.COM;2") != 0);
+        CHECK(strstr(stub_log(), "MKDIR") != 0);
+        CHECK(vt_find_node(&a, "DKA0:", "[USERS.IAIN.NEW]") >= 0);
+    }
+    {   /* copying them into COM (limit 2, one there already) is refused, nothing done */
+        int k[] = { VK_PF1, VK_UP, 'T', 'T', VK_PF1, 'C', VK_RETURN, VK_CTRL_U, 'D', 'K', 'A', '0', ':', '[',
+                    'U', 'S', 'E', 'R', 'S', '.', 'I', 'A', 'I', 'N', '.', 'C', 'O', 'M', ']', VK_RETURN, VK_NONE };
+        size_t before = strlen(stub_log());
+        keys(&a, k);
+        CHECK(strstr(a.msg, "Refused") && strstr(a.msg, "RMS would delete"));
+        CHECK(strlen(stub_log()) == before);
+    }
+    {   /* a failing copy in the middle: S skips it and the rest goes on */
+        int k[] = { VK_PF1, 'T', VK_PF1, 'C', VK_RETURN, VK_CTRL_U, 'D', 'K', 'A', '0', ':', '[',
+                    'U', 'S', 'E', 'R', 'S', '.', 'G', 'U', 'E', 'S', 'T', ']', VK_NONE };
+        int ans[] = { 'Y', 'S', VK_NONE };
+        stub_fail_copy("NOTES");
+        keys(&a, k);
+        stub_keys(ans);
+        { int k2[] = { VK_RETURN, VK_NONE }; keys(&a, k2); }
+        CHECK(strstr(stub_log(), "NOTES.TXT;1 -> DKA0:[USERS.GUEST]NOTES.TXT  %SYSTEM-F-NOPRIV") != 0);
+        CHECK(strstr(stub_log(), "SECRET.DAT;1 -> DKA0:[USERS.GUEST]SECRET.DAT;1") != 0);
+        CHECK(strstr(a.msg, "Copy: 4 done") != 0);
+    }
+    {   /* move to another disk: refused */
+        int k[] = { VK_PF1, VK_UP, 'M', VK_CTRL_U, 'D', 'K', 'A', '1', '0', '0', ':', '[', '0', '0', '0', '0', '0', '0', ']', VK_RETURN, VK_NONE };
+        stub_dir("DKA100:", "[X]");
+        keys(&a, k);
+        CHECK(strstr(a.msg, "another disk") != 0);
+    }
+    {   /* rename the two tagged LOGIN.COMs to *.OLD: each keeps its version */
+        int k[] = { VK_PF1, 'U', VK_PF1, VK_UP, 'T', 'T', VK_PF1, 'R', VK_CTRL_U, '*', '.', 'O', 'L', 'D', VK_NONE };
+        int ans[] = { 'Y', VK_NONE };
+        keys(&a, k);
+        stub_keys(ans);
+        { int k2[] = { VK_RETURN, VK_NONE }; keys(&a, k2); }
+        CHECK(strstr(stub_log(), "RENAME DKA0:[USERS.IAIN]LOGIN.COM;11 -> DKA0:[USERS.IAIN]LOGIN.OLD;11") != 0);
+        CHECK(strstr(stub_log(), "RENAME DKA0:[USERS.IAIN]LOGIN.COM;12 -> DKA0:[USERS.IAIN]LOGIN.OLD;12") != 0);
+        CHECK(strstr(a.msg, "Rename: 2 done") != 0);
+    }
+    {   /* one file can't take a fixed name for two */
+        int k[] = { VK_PF1, VK_UP, 'T', 'T', VK_PF1, 'R', VK_CTRL_U, 'X', '.', 'Y', VK_RETURN, VK_NONE };
+        keys(&a, k);
+        CHECK(strstr(a.msg, "can't all get the name") != 0);
+    }
+    vt_app_free(&a);
+
+    /* 10. Make, rename a directory; edit; subprocess; a move within the disk. */
+    world();
+    CHECK(vt_app_init(&a, 0, 24, 80));
+    vtp_start(&a.sess);
+    while (vt_app_idle(&a)) continue;
+    { int k[] = { 'M', 'T', 'O', 'O', 'L', 'S', VK_RETURN, VK_NONE }; keys(&a, k); }
+    CHECK(!strcmp(a.t.n[vt_cur_node(&a)].name, "TOOLS"));
+    CHECK(strstr(stub_log(), "MKDIR  DKA0:[USERS.IAIN.TOOLS]") != 0);
+    { int k[] = { 'M', 'A', '.', 'B', VK_RETURN, VK_NONE }; keys(&a, k); }
+    CHECK(strstr(a.msg, "Not a directory name") != 0);
+    {   /* no delete access on the new directory: asked, allowed, put back */
+        int ans[] = { 'Y', VK_NONE };
+        int k[] = { 'R', VK_CTRL_U, 'B', 'I', 'N', VK_RETURN, VK_NONE };
+        stub_keys(ans);
+        keys(&a, k);
+    }
+    CHECK(!strcmp(a.t.n[vt_cur_node(&a)].name, "BIN"));
+    CHECK(strstr(stub_log(), "PROT   DKA0:[USERS.IAIN]BIN.DIR;1") != 0);
+    {
+        int ans[] = { 'N', VK_NONE };
+        int k[] = { 'R', VK_CTRL_U, 'B', 'I', 'N', '2', VK_RETURN, VK_NONE };
+        stub_keys(ans);
+        keys(&a, k);
+        CHECK(!strcmp(a.t.n[vt_cur_node(&a)].name, "BIN"));      /* refused: unchanged */
+        CHECK(strstr(a.msg, "Nothing done") != 0);
+    }
+    CHECK(strstr(stub_log(), "[USERS.IAIN]TOOLS.DIR;1 -> DKA0:[USERS.IAIN]BIN.DIR;1") != 0);
+    snap(&a, "14_renamed_dir");
+    {
+        int i, sys = -1;
+        for (i = 0; i < a.t.count; i++) if (!strcmp(a.t.n[i].name, "SYSCOMMON")) sys = i;
+        (void) sys;
+    }
+    { int k[] = { VK_LEFT, VK_RETURN, 'E', VK_NONE }; keys(&a, k); }
+    CHECK(!strcmp(stub_spawned(), "DKA0:[USERS.IAIN]LOGIN.COM;12"));
+    { int k[] = { 'X', VK_NONE }; keys(&a, k); }
+    CHECK(!strcmp(stub_spawned(), "DCL"));
+    {   /* move NOTES.TXT into BIN: same version, gone from IAIN */
+        int k[] = { VK_PF1, VK_DOWN, VK_LEFT, 'M', VK_CTRL_U, 'D', 'K', 'A', '0', ':', '[', 'U', 'S', 'E', 'R',
+                    'S', '.', 'I', 'A', 'I', 'N', '.', 'B', 'I', 'N', ']', VK_RETURN, VK_NONE };
+        keys(&a, k);
+        CHECK(strstr(stub_log(), "MOVE   DKA0:[USERS.IAIN]NOTES.TXT;1 -> DKA0:[USERS.IAIN.BIN]NOTES.TXT;1") != 0);
+        CHECK(nrefs(&a) == 4);
+    }
+    vt_app_free(&a);
+
     /* 8. A 132-column, 30-row screen. */
     world();
     CHECK(vt_app_init(&a, "DKA0:[USERS.IAIN.VMS_VTREE]", 30, 132));
     vtp_start(&a.sess);
-    while (vt_app_idle(&a)) ;
+    while (vt_app_idle(&a)) continue;
     snap(&a, "11_wide");
     vt_app_free(&a);
 
